@@ -1,0 +1,17 @@
+Instrukcja użycia modelu (scikit-learn Pipeline)
+-----------------------------------------------
+
+Python >= 3.8, pakiety: scikit-learn, pandas, numpy, joblib.
+
+Przykład:
+import joblib, pandas as pd
+pipe = joblib.load('diabetes_best_model.joblib')
+nowa = pd.DataFrame([{
+ 'Pregnancies': 2, 'Glucose': 120, 'BloodPressure': 70,
+ 'SkinThickness': 20, 'Insulin': 85, 'BMI': 30.1,
+ 'DiabetesPedigreeFunction': 0.5, 'Age': 35,
+ 'Glucose_was_zero': 0, 'BloodPressure_was_zero': 0,
+ 'SkinThickness_was_zero': 0, 'Insulin_was_zero': 0, 'BMI_was_zero': 0
+}])
+p = pipe.predict_proba(nowa)[:,1][0]
+pred = int(p >= 0.5)

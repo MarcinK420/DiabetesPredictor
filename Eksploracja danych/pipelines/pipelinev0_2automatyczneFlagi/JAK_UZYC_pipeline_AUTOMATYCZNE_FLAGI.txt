@@ -1,0 +1,14 @@
+Gotowy pipeline z automatycznymi flagami zer:
+- przyjmuje TYLKO oryginalne kolumny: Pregnancies, Glucose, BloodPressure, SkinThickness, Insulin, BMI, DiabetesPedigreeFunction, Age
+- sam dodaje kolumny *_was_zero, zamienia zera na NaN, imputuje medianą, skaluje i przewiduje.
+
+Przykład użycia:
+import joblib, pandas as pd
+pipe = joblib.load('diabetes_pipeline_autoflags.joblib')
+nowa = pd.DataFrame([{
+ 'Pregnancies': 2, 'Glucose': 120, 'BloodPressure': 70,
+ 'SkinThickness': 20, 'Insulin': 85, 'BMI': 30.1,
+ 'DiabetesPedigreeFunction': 0.5, 'Age': 35
+}])
+p = pipe.predict_proba(nowa)[:,1][0]
+pred = int(p >= 0.5)
