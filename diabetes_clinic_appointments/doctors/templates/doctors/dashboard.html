@@ -1,0 +1,54 @@
+{% extends 'authentication/base.html' %}
+
+{% block title %}Panel Lekarza - Klinika Diabetologiczna{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Panel Lekarza</h2>
+            <a href="{% url 'authentication:logout' %}" class="btn btn-outline-danger">Wyloguj</a>
+        </div>
+        
+        <div class="alert alert-info">
+            <h4>Witaj, Dr. {{ user.first_name }} {{ user.last_name }}!</h4>
+            <p>Jesteś zalogowany jako lekarz w systemie kliniki diabetologicznej.</p>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Twój profil</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if user.doctor_profile %}
+                            <p><strong>Specjalizacja:</strong> {{ user.doctor_profile.get_specialization_display }}</p>
+                            <p><strong>Doświadczenie:</strong> {{ user.doctor_profile.years_of_experience }} lat</p>
+                            <p><strong>Numer licencji:</strong> {{ user.doctor_profile.license_number }}</p>
+                            <p><strong>Godziny pracy:</strong> {{ user.doctor_profile.working_hours_start }} - {{ user.doctor_profile.working_hours_end }}</p>
+                            <p><strong>Opłata:</strong> {{ user.doctor_profile.consultation_fee }} PLN</p>
+                        {% else %}
+                            <p class="text-warning">Brak profilu lekarza</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Szybkie akcje</h5>
+                    </div>
+                    <div class="card-body">
+                        <a href="#" class="btn btn-success mb-2 w-100">Zarządzaj kalendarzem</a>
+                        <a href="#" class="btn btn-outline-success mb-2 w-100">Lista pacjentów</a>
+                        <a href="#" class="btn btn-outline-primary mb-2 w-100">Zaplanowane wizyty</a>
+                        <a href="#" class="btn btn-outline-secondary w-100">Edytuj profil</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

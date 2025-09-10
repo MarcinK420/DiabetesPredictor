@@ -1,0 +1,129 @@
+{% extends 'authentication/base.html' %}
+
+{% block title %}Rejestracja Lekarza - Klinika Diabetologiczna{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">Rejestracja Lekarza</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.username.id_for_label }}" class="form-label">Nazwa użytkownika *</label>
+                            {{ form.username }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.email.id_for_label }}" class="form-label">Email *</label>
+                            {{ form.email }}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.first_name.id_for_label }}" class="form-label">Imię *</label>
+                            {{ form.first_name }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.last_name.id_for_label }}" class="form-label">Nazwisko *</label>
+                            {{ form.last_name }}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.password1.id_for_label }}" class="form-label">Hasło *</label>
+                            {{ form.password1 }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.password2.id_for_label }}" class="form-label">Potwierdź hasło *</label>
+                            {{ form.password2 }}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.phone_number.id_for_label }}" class="form-label">Telefon</label>
+                            {{ form.phone_number }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.license_number.id_for_label }}" class="form-label">Numer licencji *</label>
+                            {{ form.license_number }}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.specialization.id_for_label }}" class="form-label">Specjalizacja *</label>
+                            {{ form.specialization }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.years_of_experience.id_for_label }}" class="form-label">Lata doświadczenia *</label>
+                            {{ form.years_of_experience }}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.consultation_fee.id_for_label }}" class="form-label">Opłata za konsultację *</label>
+                            {{ form.consultation_fee }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.working_days.id_for_label }}" class="form-label">Dni pracy *</label>
+                            {{ form.working_days }}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.working_hours_start.id_for_label }}" class="form-label">Początek godzin pracy *</label>
+                            {{ form.working_hours_start }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.working_hours_end.id_for_label }}" class="form-label">Koniec godzin pracy *</label>
+                            {{ form.working_hours_end }}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.office_address.id_for_label }}" class="form-label">Adres gabinetu *</label>
+                        {{ form.office_address }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.education.id_for_label }}" class="form-label">Wykształcenie *</label>
+                        {{ form.education }}
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.certifications.id_for_label }}" class="form-label">Certyfikaty</label>
+                            {{ form.certifications }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.bio.id_for_label }}" class="form-label">Biografia</label>
+                            {{ form.bio }}
+                        </div>
+                    </div>
+                    
+                    {% if form.errors %}
+                        <div class="alert alert-danger">
+                            {{ form.errors }}
+                        </div>
+                    {% endif %}
+                    
+                    <button type="submit" class="btn btn-success w-100">Zarejestruj się jako Lekarz</button>
+                </form>
+            </div>
+            <div class="card-footer text-center">
+                <p class="mb-0">Masz już konto? <a href="{% url 'authentication:login' %}">Zaloguj się</a></p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

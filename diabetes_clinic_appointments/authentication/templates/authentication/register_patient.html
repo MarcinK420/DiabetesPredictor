@@ -1,0 +1,118 @@
+{% extends 'authentication/base.html' %}
+
+{% block title %}Rejestracja Pacjenta - Klinika Diabetologiczna{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">Rejestracja Pacjenta</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.username.id_for_label }}" class="form-label">Nazwa użytkownika *</label>
+                            {{ form.username }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.email.id_for_label }}" class="form-label">Email *</label>
+                            {{ form.email }}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.first_name.id_for_label }}" class="form-label">Imię *</label>
+                            {{ form.first_name }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.last_name.id_for_label }}" class="form-label">Nazwisko *</label>
+                            {{ form.last_name }}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.password1.id_for_label }}" class="form-label">Hasło *</label>
+                            {{ form.password1 }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.password2.id_for_label }}" class="form-label">Potwierdź hasło *</label>
+                            {{ form.password2 }}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.phone_number.id_for_label }}" class="form-label">Telefon</label>
+                            {{ form.phone_number }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.pesel.id_for_label }}" class="form-label">PESEL *</label>
+                            {{ form.pesel }}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.date_of_birth.id_for_label }}" class="form-label">Data urodzenia *</label>
+                            {{ form.date_of_birth }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.diabetes_type.id_for_label }}" class="form-label">Typ cukrzycy *</label>
+                            {{ form.diabetes_type }}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.diagnosis_date.id_for_label }}" class="form-label">Data diagnozy *</label>
+                        {{ form.diagnosis_date }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.address.id_for_label }}" class="form-label">Adres *</label>
+                        {{ form.address }}
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.emergency_contact_name.id_for_label }}" class="form-label">Kontakt awaryjny - imię *</label>
+                            {{ form.emergency_contact_name }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.emergency_contact_phone.id_for_label }}" class="form-label">Kontakt awaryjny - telefon *</label>
+                            {{ form.emergency_contact_phone }}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.current_medications.id_for_label }}" class="form-label">Aktualne leki</label>
+                            {{ form.current_medications }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.allergies.id_for_label }}" class="form-label">Alergie</label>
+                            {{ form.allergies }}
+                        </div>
+                    </div>
+                    
+                    {% if form.errors %}
+                        <div class="alert alert-danger">
+                            {{ form.errors }}
+                        </div>
+                    {% endif %}
+                    
+                    <button type="submit" class="btn btn-primary w-100">Zarejestruj się jako Pacjent</button>
+                </form>
+            </div>
+            <div class="card-footer text-center">
+                <p class="mb-0">Masz już konto? <a href="{% url 'authentication:login' %}">Zaloguj się</a></p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

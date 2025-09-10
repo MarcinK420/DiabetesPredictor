@@ -1,0 +1,42 @@
+{% extends 'authentication/base.html' %}
+
+{% block title %}Wybierz typ konta - Klinika Diabetologiczna{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="text-center mb-4">
+            <h2>Wybierz typ konta</h2>
+            <p class="text-muted">Wybierz rodzaj konta, które chcesz utworzyć</p>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <i class="fas fa-user-injured fa-3x text-primary mb-3"></i>
+                        <h4>Pacjent</h4>
+                        <p class="text-muted">Umów wizytę u specjalisty ds. cukrzycy</p>
+                        <a href="{% url 'authentication:register_patient' %}" class="btn btn-primary">Rejestracja Pacjenta</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 mb-3">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <i class="fas fa-user-md fa-3x text-success mb-3"></i>
+                        <h4>Lekarz</h4>
+                        <p class="text-muted">Zarządzaj swoim kalendarzem i pacjentami</p>
+                        <a href="{% url 'authentication:register_doctor' %}" class="btn btn-success">Rejestracja Lekarza</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-center mt-3">
+            <p class="mb-0">Masz już konto? <a href="{% url 'authentication:login' %}">Zaloguj się</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}

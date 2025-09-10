@@ -1,0 +1,52 @@
+{% extends 'authentication/base.html' %}
+
+{% block title %}Panel Pacjenta - Klinika Diabetologiczna{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Panel Pacjenta</h2>
+            <a href="{% url 'authentication:logout' %}" class="btn btn-outline-danger">Wyloguj</a>
+        </div>
+        
+        <div class="alert alert-success">
+            <h4>Witaj, {{ user.first_name }} {{ user.last_name }}!</h4>
+            <p>Jesteś zalogowany jako pacjent w systemie kliniki diabetologicznej.</p>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Twoje dane</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if user.patient_profile %}
+                            <p><strong>Typ cukrzycy:</strong> {{ user.patient_profile.get_diabetes_type_display }}</p>
+                            <p><strong>Data diagnozy:</strong> {{ user.patient_profile.diagnosis_date }}</p>
+                            <p><strong>PESEL:</strong> {{ user.patient_profile.pesel }}</p>
+                            <p><strong>Telefon:</strong> {{ user.phone_number|default:"Nie podano" }}</p>
+                        {% else %}
+                            <p class="text-warning">Brak profilu pacjenta</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Szybkie akcje</h5>
+                    </div>
+                    <div class="card-body">
+                        <a href="#" class="btn btn-primary mb-2 w-100">Umów wizytę</a>
+                        <a href="#" class="btn btn-outline-primary mb-2 w-100">Moje wizyty</a>
+                        <a href="#" class="btn btn-outline-secondary w-100">Edytuj profil</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
