@@ -12,30 +12,34 @@
         
         <div class="row">
             <div class="col-md-6 mb-3">
-                <div class="card h-100">
+                <div class="card h-100 shadow-sm border-primary">
                     <div class="card-body text-center">
                         <i class="fas fa-user-injured fa-3x text-primary mb-3"></i>
                         <h4>Pacjent</h4>
-                        <p class="text-muted">Umów wizytę u specjalisty ds. cukrzycy</p>
-                        <a href="{% url 'authentication:register_patient' %}" class="btn btn-primary">Rejestracja Pacjenta</a>
+                        <p class="text-muted">Umów wizytę u specjalisty ds. cukrzycy, przeglądaj historię badań</p>
+                        <div class="d-grid">
+                            <a href="{% url 'authentication:register_patient' %}" class="btn btn-primary btn-lg">Rejestracja Pacjenta</a>
+                        </div>
                     </div>
                 </div>
             </div>
             
             <div class="col-md-6 mb-3">
-                <div class="card h-100">
+                <div class="card h-100 shadow-sm border-success">
                     <div class="card-body text-center">
                         <i class="fas fa-user-md fa-3x text-success mb-3"></i>
                         <h4>Lekarz</h4>
-                        <p class="text-muted">Zarządzaj swoim kalendarzem i pacjentami</p>
-                        <a href="{% url 'authentication:register_doctor' %}" class="btn btn-success">Rejestracja Lekarza</a>
+                        <p class="text-muted">Zarządzaj swoim kalendarzem wizyt i listą pacjentów</p>
+                        <div class="d-grid">
+                            <a href="{% url 'authentication:register_doctor' %}" class="btn btn-success btn-lg">Rejestracja Lekarza</a>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
         
-        <div class="text-center mt-3">
-            <p class="mb-0">Masz już konto? <a href="{% url 'authentication:login' %}">Zaloguj się</a></p>
+        <div class="text-center mt-4">
+            <p class="mb-0">Masz już konto? <a href="{% url 'authentication:login' %}" class="text-decoration-none">Zaloguj się</a></p>
         </div>
     </div>
 </div>

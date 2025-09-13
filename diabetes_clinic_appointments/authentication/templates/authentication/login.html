@@ -4,9 +4,9 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow">
+            <div class="card-header text-center">
                 <h4 class="mb-0">Logowanie</h4>
             </div>
             <div class="card-body">
@@ -14,22 +14,29 @@
                     {% csrf_token %}
                     <div class="mb-3">
                         <label for="{{ form.username.id_for_label }}" class="form-label">Nazwa użytkownika</label>
-                        {{ form.username }}
+                        <input type="text" name="{{ form.username.name }}" class="form-control" id="{{ form.username.id_for_label }}" 
+                               value="{{ form.username.value|default:'' }}" required>
                     </div>
                     <div class="mb-3">
                         <label for="{{ form.password.id_for_label }}" class="form-label">Hasło</label>
-                        {{ form.password }}
+                        <input type="password" name="{{ form.password.name }}" class="form-control" id="{{ form.password.id_for_label }}" required>
                     </div>
                     {% if form.errors %}
                         <div class="alert alert-danger">
-                            {{ form.errors }}
+                            {% for field, errors in form.errors.items %}
+                                {% for error in errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            {% endfor %}
                         </div>
                     {% endif %}
-                    <button type="submit" class="btn btn-primary w-100">Zaloguj się</button>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">Zaloguj się</button>
+                    </div>
                 </form>
             </div>
             <div class="card-footer text-center">
-                <p class="mb-0">Nie masz konta? <a href="{% url 'authentication:register_choice' %}">Zarejestruj się</a></p>
+                <p class="mb-0">Nie masz konta? <a href="{% url 'authentication:register_choice' %}" class="text-decoration-none">Zarejestruj się</a></p>
             </div>
         </div>
     </div>

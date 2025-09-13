@@ -4,10 +4,11 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-10">
-        <div class="card">
-            <div class="card-header">
+    <div class="col-md-10 col-lg-9">
+        <div class="card shadow">
+            <div class="card-header text-center">
                 <h4 class="mb-0">Rejestracja Lekarza</h4>
+                <small class="text-muted">Wypełnij wszystkie wymagane pola oznaczone *</small>
             </div>
             <div class="card-body">
                 <form method="post">
@@ -113,15 +114,24 @@
                     
                     {% if form.errors %}
                         <div class="alert alert-danger">
-                            {{ form.errors }}
+                            <h6>Błędy w formularzu:</h6>
+                            {% for field, errors in form.errors.items %}
+                                <div><strong>{{ field }}:</strong>
+                                    {% for error in errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endfor %}
                         </div>
                     {% endif %}
                     
-                    <button type="submit" class="btn btn-success w-100">Zarejestruj się jako Lekarz</button>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-success btn-lg">Zarejestruj się jako Lekarz</button>
+                    </div>
                 </form>
             </div>
             <div class="card-footer text-center">
-                <p class="mb-0">Masz już konto? <a href="{% url 'authentication:login' %}">Zaloguj się</a></p>
+                <p class="mb-0">Masz już konto? <a href="{% url 'authentication:login' %}" class="text-decoration-none">Zaloguj się</a></p>
             </div>
         </div>
     </div>
