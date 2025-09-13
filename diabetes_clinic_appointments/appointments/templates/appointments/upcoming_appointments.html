@@ -1,0 +1,84 @@
+{% extends 'authentication/base.html' %}
+
+{% block title %}Nadchodzące wizyty - Klinika Diabetologiczna{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Nadchodzące wizyty</h2>
+            <div>
+                <a href="{% url 'appointments:book_appointment' %}" class="btn btn-primary me-2">
+                    <i class="fas fa-plus"></i> Umów nową wizytę
+                </a>
+                <a href="{% url 'patients:dashboard' %}" class="btn btn-outline-secondary">Powrót do panelu</a>
+            </div>
+        </div>
+
+        {% if appointments %}
+            <div class="alert alert-info mb-3">
+                <i class="fas fa-info-circle"></i>
+                <strong>Wskazówka:</strong> Tutaj znajdziesz wszystkie swoje zaplanowane wizyty.
+                Kliknij w wizytę aby zobaczyć szczegóły.
+            </div>
+
+            <div class="row">
+                {% for appointment in appointments %}
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">{{ appointment.appointment_date|date:"l, j F Y" }}</h6>
+                                <span class="badge bg-primary">{{ appointment.get_status_display }}</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-12">
+                                        <p class="mb-2">
+                                            <i class="fas fa-clock text-primary"></i>
+                                            <strong>Godzina:</strong> {{ appointment.appointment_date|time:"H:i" }}
+                                        </p>
+                                        <p class="mb-2">
+                                            <i class="fas fa-user-md text-primary"></i>
+                                            <strong>Lekarz:</strong> Dr. {{ appointment.doctor.user.first_name }} {{ appointment.doctor.user.last_name }}
+                                        </p>
+                                        <p class="mb-2">
+                                            <i class="fas fa-stethoscope text-primary"></i>
+                                            <strong>Specjalizacja:</strong> {{ appointment.doctor.get_specialization_display }}
+                                        </p>
+                                        <p class="mb-3">
+                                            <i class="fas fa-comment text-primary"></i>
+                                            <strong>Powód:</strong> {{ appointment.reason }}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <a href="{% url 'appointments:detail' appointment.id %}"
+                                       class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-eye"></i> Szczegóły
+                                    </a>
+                                    <!-- Future implementation: Edit and Cancel buttons -->
+                                    <button class="btn btn-outline-warning btn-sm" disabled>
+                                        <i class="fas fa-edit"></i> Edytuj
+                                    </button>
+                                    <button class="btn btn-outline-danger btn-sm" disabled>
+                                        <i class="fas fa-times"></i> Anuluj
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info text-center">
+                <i class="fas fa-calendar-alt fa-3x text-muted mb-3"></i>
+                <h4>Brak zaplanowanych wizyt</h4>
+                <p class="mb-3">Nie masz jeszcze żadnych nadchodzących wizyt.</p>
+                <a href="{% url 'appointments:book_appointment' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Umów pierwszą wizytę
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
