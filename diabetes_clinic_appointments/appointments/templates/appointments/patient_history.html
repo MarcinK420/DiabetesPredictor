@@ -11,6 +11,11 @@
         </div>
         
         {% if appointments %}
+            <div class="alert alert-info mb-3">
+                <i class="fas fa-info-circle"></i>
+                <strong>Wskazówka:</strong> Kliknij w dowolny wiersz tabeli aby szybko podejrzeć szczegóły wizyty w oknie popup, lub użyj przycisków "Podgląd" i "Szczegóły".
+            </div>
+            
             <div class="card">
                 <div class="card-header">
                     <h5>Twoje wizyty ({{ appointments.paginator.count }} w sumie)</h5>
@@ -29,7 +34,8 @@
                             </thead>
                             <tbody>
                                 {% for appointment in appointments %}
-                                <tr>
+                                <tr class="appointment-row" style="cursor: pointer;" 
+                                    onclick="showAppointmentModal({{ appointment.id }}, '{{ appointment.appointment_date|date:"d.m.Y H:i" }}', 'Dr. {{ appointment.doctor.user.first_name }} {{ appointment.doctor.user.last_name }}', '{{ appointment.reason }}', '{{ appointment.get_status_display }}', '{{ appointment.status }}')">
                                     <td>{{ appointment.appointment_date|date:"d.m.Y H:i" }}</td>
                                     <td>Dr. {{ appointment.doctor.user.first_name }} {{ appointment.doctor.user.last_name }}</td>
                                     <td>{{ appointment.reason }}</td>
@@ -45,7 +51,8 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        <a href="{% url 'appointments:detail' appointment.id %}" class="btn btn-sm btn-outline-primary">Szczegóły</a>
+                                        <a href="{% url 'appointments:detail' appointment.id %}" class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation();">Szczegóły</a>
+                                        <button class="btn btn-sm btn-outline-info" onclick="event.stopPropagation(); showAppointmentModal({{ appointment.id }}, '{{ appointment.appointment_date|date:"d.m.Y H:i" }}', 'Dr. {{ appointment.doctor.user.first_name }} {{ appointment.doctor.user.last_name }}', '{{ appointment.reason }}', '{{ appointment.get_status_display }}', '{{ appointment.status }}')">Podgląd</button>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -91,6 +98,94 @@
                 <a href="#" class="btn btn-primary">Umów pierwszą wizytę</a>
             </div>
         {% endif %}
+        
+        <!-- Modal popup dla szybkiego podglądu wizyty -->
+        <div class="modal fade" id="appointmentModal" tabindex="-1" aria-labelledby="appointmentModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="appointmentModalLabel">Szczegóły wizyty</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Data i godzina:</strong></p>
+                                <p id="modal-date" class="text-muted"></p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Status:</strong></p>
+                                <p id="modal-status"></p>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Lekarz:</strong></p>
+                                <p id="modal-doctor" class="text-muted"></p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Powód wizyty:</strong></p>
+                                <p id="modal-reason" class="text-muted"></p>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i> 
+                                Aby zobaczyć pełne szczegóły wizyty (notatki, informacje o lekarzu), kliknij "Pełne szczegóły" poniżej.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zamknij</button>
+                        <a href="#" id="modal-details-link" class="btn btn-primary">Pełne szczegóły</a>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+
+<style>
+.appointment-row:hover {
+    background-color: #f8f9fa;
+    transition: background-color 0.2s ease;
+}
+
+.appointment-row:hover td {
+    background-color: transparent;
+}
+</style>
+
+<script>
+function showAppointmentModal(appointmentId, date, doctor, reason, statusDisplay, statusCode) {
+    // Wypełnij modal danymi
+    document.getElementById('modal-date').textContent = date;
+    document.getElementById('modal-doctor').textContent = doctor;
+    document.getElementById('modal-reason').textContent = reason;
+    
+    // Ustaw odpowiedni kolor dla statusu
+    const statusElement = document.getElementById('modal-status');
+    let statusClass = '';
+    if (statusCode === 'scheduled') {
+        statusClass = 'badge bg-primary';
+    } else if (statusCode === 'completed') {
+        statusClass = 'badge bg-success';
+    } else if (statusCode === 'cancelled') {
+        statusClass = 'badge bg-danger';
+    } else {
+        statusClass = 'badge bg-warning';
+    }
+    
+    statusElement.innerHTML = `<span class="${statusClass}">${statusDisplay}</span>`;
+    
+    // Ustaw link do pełnych szczegółów
+    const detailsLink = document.getElementById('modal-details-link');
+    detailsLink.href = `/appointments/detail/${appointmentId}/`;
+    
+    // Pokaż modal
+    const modal = new bootstrap.Modal(document.getElementById('appointmentModal'));
+    modal.show();
+}
+</script>
+
 {% endblock %}
