@@ -1,0 +1,225 @@
+{% extends 'authentication/base.html' %}
+
+{% block title %}Mój profil - Klinika Diabetologiczna{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Mój profil</h2>
+            <div>
+                <a href="{% url 'patients:edit_profile' %}" class="btn btn-primary me-2">
+                    <i class="fas fa-edit"></i> Edytuj profil
+                </a>
+                <a href="{% url 'patients:dashboard' %}" class="btn btn-outline-secondary">Powrót do panelu</a>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Basic Information -->
+            <div class="col-lg-8">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-user"></i> Dane osobowe</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Imię i nazwisko:</label>
+                                <p class="mb-0">{{ user.first_name }} {{ user.last_name }}</p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Wiek:</label>
+                                <p class="mb-0">{{ age }} lat</p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Data urodzenia:</label>
+                                <p class="mb-0">{{ patient.date_of_birth|date:"d.m.Y" }}</p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">PESEL:</label>
+                                <p class="mb-0">
+                                    {{ patient.get_masked_pesel }}
+                                    <small class="text-muted">(częściowo ukryte)</small>
+                                </p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Email:</label>
+                                <p class="mb-0">{{ user.email }}</p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Telefon:</label>
+                                <p class="mb-0">{{ user.phone_number|default:"Nie podano" }}</p>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <label class="form-label fw-bold">Adres:</label>
+                                <p class="mb-0">{{ patient.address }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Medical Information -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-stethoscope"></i> Informacje medyczne</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Typ cukrzycy:</label>
+                                <p class="mb-0">
+                                    <span class="badge bg-info fs-6">
+                                        {{ patient.get_diabetes_type_display }}
+                                    </span>
+                                </p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Data diagnozy:</label>
+                                <p class="mb-0">{{ patient.diagnosis_date|date:"d.m.Y" }}</p>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Obecne leki:</label>
+                                <p class="mb-0">
+                                    {% if patient.current_medications %}
+                                        {{ patient.current_medications|linebreaks }}
+                                    {% else %}
+                                        <em class="text-muted">Brak informacji</em>
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Alergie:</label>
+                                <p class="mb-0">
+                                    {% if patient.allergies %}
+                                        {{ patient.allergies|linebreaks }}
+                                    {% else %}
+                                        <em class="text-muted">Brak znanych alergii</em>
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Emergency Contact -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-phone-alt"></i> Kontakt awaryjny</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Osoba kontaktowa:</label>
+                                <p class="mb-0">{{ patient.emergency_contact_name }}</p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Telefon awaryjny:</label>
+                                <p class="mb-0">{{ patient.emergency_contact_phone }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Sidebar -->
+            <div class="col-lg-4">
+                <!-- Appointment Summary -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-calendar-check"></i> Podsumowanie wizyt</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span>Łączna liczba wizyt:</span>
+                            <span class="badge bg-primary fs-6">{{ total_appointments }}</span>
+                        </div>
+
+                        {% if next_appointment %}
+                            <div class="alert alert-info">
+                                <h6><i class="fas fa-clock"></i> Najbliższa wizyta</h6>
+                                <p class="mb-1">
+                                    <strong>{{ next_appointment.appointment_date|date:"l, j F Y" }}</strong><br>
+                                    <strong>{{ next_appointment.appointment_date|time:"H:i" }}</strong>
+                                </p>
+                                <p class="mb-0">
+                                    <small>Dr. {{ next_appointment.doctor.user.first_name }} {{ next_appointment.doctor.user.last_name }}</small>
+                                </p>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-secondary">
+                                <p class="mb-0">
+                                    <i class="fas fa-info-circle"></i>
+                                    Brak zaplanowanych wizyt
+                                </p>
+                            </div>
+                        {% endif %}
+
+                        {% if last_appointment %}
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Ostatnia wizyta:</label>
+                                <p class="mb-0">
+                                    {{ last_appointment.appointment_date|date:"d.m.Y" }}<br>
+                                    <small class="text-muted">Dr. {{ last_appointment.doctor.user.last_name }}</small>
+                                </p>
+                            </div>
+                        {% endif %}
+
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'appointments:book_appointment' %}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-plus"></i> Umów wizytę
+                            </a>
+                            <a href="{% url 'appointments:upcoming' %}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-list"></i> Moje wizyty
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Account Information -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-info-circle"></i> Informacje o koncie</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-2">
+                            <label class="form-label fw-bold">Data utworzenia:</label>
+                            <p class="mb-0">{{ patient.created_at|date:"d.m.Y H:i" }}</p>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label fw-bold">Ostatnia aktualizacja:</label>
+                            <p class="mb-0">{{ patient.updated_at|date:"d.m.Y H:i" }}</p>
+                        </div>
+                        <div class="mb-0">
+                            <label class="form-label fw-bold">Status konta:</label>
+                            <p class="mb-0">
+                                <span class="badge bg-success">Aktywne</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Privacy Notice -->
+                <div class="card">
+                    <div class="card-header">
+                        <h6><i class="fas fa-shield-alt"></i> Bezpieczeństwo danych</h6>
+                    </div>
+                    <div class="card-body">
+                        <small class="text-muted">
+                            <i class="fas fa-lock"></i>
+                            Niektóre dane osobowe (jak PESEL) są częściowo ukryte dla Twojego bezpieczeństwa.
+                            Wszystkie dane medyczne są przechowywane zgodnie z przepisami RODO.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

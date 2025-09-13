@@ -1,0 +1,258 @@
+{% extends 'authentication/base.html' %}
+
+{% block title %}Edytuj profil - Klinika Diabetologiczna{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Edytuj profil</h2>
+            <a href="{% url 'patients:profile' %}" class="btn btn-outline-secondary">Powrót do profilu</a>
+        </div>
+
+        <div class="alert alert-info mb-4">
+            <i class="fas fa-info-circle"></i>
+            <strong>Uwaga:</strong> Niektóre dane (jak PESEL, data urodzenia, typ cukrzycy) nie mogą być edytowane ze względów bezpieczeństwa.
+            Skontaktuj się z administracją w celu zmiany tych danych.
+        </div>
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+
+            <div class="row">
+                <!-- Personal Data -->
+                <div class="col-lg-6">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5><i class="fas fa-user"></i> Dane osobowe</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.first_name.id_for_label }}" class="form-label">
+                                        {{ form.first_name.label }}
+                                        {% if form.first_name.field.required %}
+                                            <span class="text-danger">*</span>
+                                        {% endif %}
+                                    </label>
+                                    {{ form.first_name }}
+                                    {% if form.first_name.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.first_name.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.last_name.id_for_label }}" class="form-label">
+                                        {{ form.last_name.label }}
+                                        {% if form.last_name.field.required %}
+                                            <span class="text-danger">*</span>
+                                        {% endif %}
+                                    </label>
+                                    {{ form.last_name }}
+                                    {% if form.last_name.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.last_name.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.email.id_for_label }}" class="form-label">
+                                        {{ form.email.label }}
+                                        {% if form.email.field.required %}
+                                            <span class="text-danger">*</span>
+                                        {% endif %}
+                                    </label>
+                                    {{ form.email }}
+                                    {% if form.email.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.email.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.phone_number.id_for_label }}" class="form-label">
+                                        {{ form.phone_number.label }}
+                                    </label>
+                                    {{ form.phone_number }}
+                                    {% if form.phone_number.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.phone_number.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.address.id_for_label }}" class="form-label">
+                                    {{ form.address.label }}
+                                    {% if form.address.field.required %}
+                                        <span class="text-danger">*</span>
+                                    {% endif %}
+                                </label>
+                                {{ form.address }}
+                                {% if form.address.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.address.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Non-editable data -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5><i class="fas fa-lock"></i> Dane niemodyfikowalne</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Data urodzenia:</label>
+                                    <p class="form-control-plaintext">{{ patient.date_of_birth|date:"d.m.Y" }}</p>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">PESEL:</label>
+                                    <p class="form-control-plaintext">{{ patient.get_masked_pesel }}</p>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Typ cukrzycy:</label>
+                                    <p class="form-control-plaintext">
+                                        <span class="badge bg-info">{{ patient.get_diabetes_type_display }}</span>
+                                    </p>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Data diagnozy:</label>
+                                    <p class="form-control-plaintext">{{ patient.diagnosis_date|date:"d.m.Y" }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <!-- Emergency Contact -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5><i class="fas fa-phone-alt"></i> Kontakt awaryjny</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="{{ form.emergency_contact_name.id_for_label }}" class="form-label">
+                                    {{ form.emergency_contact_name.label }}
+                                    {% if form.emergency_contact_name.field.required %}
+                                        <span class="text-danger">*</span>
+                                    {% endif %}
+                                </label>
+                                {{ form.emergency_contact_name }}
+                                {% if form.emergency_contact_name.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.emergency_contact_name.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.emergency_contact_phone.id_for_label }}" class="form-label">
+                                    {{ form.emergency_contact_phone.label }}
+                                    {% if form.emergency_contact_phone.field.required %}
+                                        <span class="text-danger">*</span>
+                                    {% endif %}
+                                </label>
+                                {{ form.emergency_contact_phone }}
+                                {% if form.emergency_contact_phone.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.emergency_contact_phone.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Medical Information -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5><i class="fas fa-pills"></i> Informacje medyczne</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="{{ form.current_medications.id_for_label }}" class="form-label">
+                                    {{ form.current_medications.label }}
+                                </label>
+                                {{ form.current_medications }}
+                                {% if form.current_medications.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.current_medications.errors }}
+                                    </div>
+                                {% endif %}
+                                {% if form.current_medications.help_text %}
+                                    <small class="form-text text-muted">
+                                        {{ form.current_medications.help_text }}
+                                    </small>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.allergies.id_for_label }}" class="form-label">
+                                    {{ form.allergies.label }}
+                                </label>
+                                {{ form.allergies }}
+                                {% if form.allergies.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.allergies.errors }}
+                                    </div>
+                                {% endif %}
+                                {% if form.allergies.help_text %}
+                                    <small class="form-text text-muted">
+                                        {{ form.allergies.help_text }}
+                                    </small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Privacy Notice -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h6><i class="fas fa-shield-alt"></i> Prywatność i bezpieczeństwo</h6>
+                        </div>
+                        <div class="card-body">
+                            <small class="text-muted">
+                                <ul class="mb-0">
+                                    <li>Wszystkie dane medyczne są szyfrowane i chronione</li>
+                                    <li>Tylko autoryzowani lekarze mają dostęp do Twoich danych</li>
+                                    <li>Dane są przechowywane zgodnie z przepisami RODO</li>
+                                    <li>PESEL jest częściowo maskowany ze względów bezpieczeństwa</li>
+                                </ul>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit buttons -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'patients:profile' %}" class="btn btn-secondary me-md-2">Anuluj</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Zapisz zmiany
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

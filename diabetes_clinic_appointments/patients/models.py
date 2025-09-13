@@ -45,6 +45,62 @@ class Patient(models.Model):
         time_since_cancellation = timezone.now() - self.last_cancellation_time
         remaining_time = timedelta(minutes=2) - time_since_cancellation
         return remaining_time
+
+    def get_age(self):
+        """Oblicza wiek pacjenta"""
+        today = timezone.now().date()
+        return today.year - self.date_of_birth.year - ((today.month, today.day) < (self.date_of_birth.month, self.date_of_birth.day))
+
+    def get_last_appointment(self):
+        """Zwraca ostatnią wizytę pacjenta"""
+        return self.appointments.filter(status='completed').order_by('-appointment_date').first()
+
+    def get_next_appointment(self):
+        """Zwraca najbliższą zaplanowaną wizytę"""
+        return self.appointments.filter(
+            status='scheduled',
+            appointment_date__gte=timezone.now()
+        ).order_by('appointment_date').first()
+
+    def get_total_appointments(self):
+        """Zwraca liczbę wszystkich wizyt"""
+        return self.appointments.count()
+
+    def get_masked_pesel(self):
+        """Zwraca częściowo zamaskowany PESEL dla bezpieczeństwa"""
+        if len(self.pesel) >= 11:
+            return f"{self.pesel[:2]}****{self.pesel[-2:]}"
+        return "***"
+
+    def get_masked_emergency_phone(self):
+        """Zwraca częściowo zamaskowany telefon awaryjny"""
+        if len(self.emergency_contact_phone) >= 9:
+            return f"{self.emergency_contact_phone[:3]}***{self.emergency_contact_phone[-3:]}"
+        return "***"
+
+    def can_be_viewed_by(self, user):
+        """Sprawdza czy dany użytkownik może wyświetlić profil pacjenta"""
+        # Pacjent może widzieć swój profil
+        if self.user == user:
+            return True
+
+        # Lekarz może widzieć profil swoich pacjentów (jeśli ma z nimi wizyty)
+        if user.is_doctor():
+            from appointments.models import Appointment
+            return Appointment.objects.filter(
+                patient=self,
+                doctor=user.doctor_profile
+            ).exists()
+
+        # Superuser/admin może widzieć wszystko
+        if user.is_superuser:
+            return True
+
+        return False
+
+    def get_sensitive_fields(self):
+        """Zwraca listę wrażliwych pól, które wymagają dodatkowej ochrony"""
+        return ['pesel', 'address', 'emergency_contact_phone', 'current_medications', 'allergies']
     
     class Meta:
         verbose_name = "Pacjent"
