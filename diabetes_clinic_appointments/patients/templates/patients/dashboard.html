@@ -49,9 +49,18 @@
                         <h5>Szybkie akcje</h5>
                     </div>
                     <div class="card-body">
-                        <a href="{% url 'appointments:book_appointment' %}" class="btn btn-primary mb-2 w-100">
-                            <i class="fas fa-calendar-plus"></i> Umów wizytę
-                        </a>
+                        {% if cooldown_info and cooldown_info.active %}
+                            <button class="btn btn-warning mb-2 w-100" disabled>
+                                <i class="fas fa-clock"></i> Odczekaj {{ cooldown_info.minutes }}:{{ cooldown_info.seconds|stringformat:"02d" }}
+                            </button>
+                            <small class="text-muted d-block mb-2">
+                                Musisz odczekać po anulowaniu wizyty przed umówieniem nowej.
+                            </small>
+                        {% else %}
+                            <a href="{% url 'appointments:book_appointment' %}" class="btn btn-primary mb-2 w-100">
+                                <i class="fas fa-calendar-plus"></i> Umów wizytę
+                            </a>
+                        {% endif %}
                         <a href="{% url 'appointments:upcoming' %}" class="btn btn-outline-primary mb-2 w-100">
                             <i class="fas fa-calendar-check"></i> Nadchodzące wizyty
                         </a>

@@ -57,6 +57,9 @@
                                             <a href="{% url 'appointments:edit_appointment' appointment.id %}" class="btn btn-sm btn-outline-warning" onclick="event.stopPropagation();">
                                                 <i class="fas fa-edit"></i> Edytuj
                                             </a>
+                                            <a href="{% url 'appointments:cancel_appointment' appointment.id %}" class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation();">
+                                                <i class="fas fa-times"></i> Anuluj
+                                            </a>
                                         {% endif %}
                                     </td>
                                 </tr>

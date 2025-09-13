@@ -49,6 +49,19 @@ def book_appointment(request):
         messages.error(request, 'Tylko pacjenci mogą rezerwować wizyty.')
         return redirect('authentication:login')
 
+    # Check if patient can book appointment (2-minute cooldown after cancellation)
+    patient = request.user.patient_profile
+    if not patient.can_book_appointment():
+        remaining_time = patient.time_until_can_book()
+        seconds = int(remaining_time.total_seconds())
+        minutes = seconds // 60
+        seconds = seconds % 60
+        messages.error(
+            request,
+            f'Musisz odczekać {minutes} minut i {seconds} sekund po anulowaniu wizyty przed zapisaniem się na nową.'
+        )
+        return redirect('appointments:upcoming')
+
     if request.method == 'POST':
         form = AppointmentBookingForm(request.POST)
         if form.is_valid():
@@ -63,9 +76,25 @@ def book_appointment(request):
     else:
         form = AppointmentBookingForm()
 
+    # Check cooldown status for template display
+    patient = request.user.patient_profile
+    cooldown_info = None
+    if not patient.can_book_appointment():
+        remaining_time = patient.time_until_can_book()
+        seconds = int(remaining_time.total_seconds())
+        minutes = seconds // 60
+        seconds = seconds % 60
+        cooldown_info = {
+            'active': True,
+            'minutes': minutes,
+            'seconds': seconds,
+            'remaining_time': remaining_time
+        }
+
     context = {
         'form': form,
         'title': 'Umów wizytę',
+        'cooldown_info': cooldown_info,
     }
     return render(request, 'appointments/book_appointment.html', context)
 
@@ -134,3 +163,50 @@ def edit_appointment(request, appointment_id):
         'title': 'Edytuj wizytę',
     }
     return render(request, 'appointments/edit_appointment.html', context)
+
+
+@login_required
+def cancel_appointment(request, appointment_id):
+    """FR-08: Anulowanie wizyty"""
+    if not request.user.is_patient():
+        messages.error(request, 'Tylko pacjenci mogą anulować swoje wizyty.')
+        return redirect('authentication:login')
+
+    # Get the appointment and ensure it belongs to the current patient
+    appointment = get_object_or_404(
+        Appointment,
+        id=appointment_id,
+        patient=request.user.patient_profile,
+        status='scheduled'  # Only allow cancellation of scheduled appointments
+    )
+
+    # Check if appointment is in the future (can't cancel past appointments)
+    if appointment.appointment_date <= timezone.now():
+        messages.error(request, 'Nie można anulować wizyty z przeszłości.')
+        return redirect('appointments:upcoming')
+
+    if request.method == 'POST':
+        # Get confirmation from the form
+        if request.POST.get('confirm_cancellation') == 'yes':
+            # Cancel the appointment
+            appointment.status = 'cancelled'
+            appointment.save()
+
+            # Update patient's last cancellation time
+            patient = request.user.patient_profile
+            patient.last_cancellation_time = timezone.now()
+            patient.save()
+
+            messages.success(request, 'Pomyślnie odwołano wizytę!')
+            return redirect('appointments:upcoming')
+        else:
+            # User chose "No" - redirect back
+            messages.info(request, 'Anulowanie zostało przerwane.')
+            return redirect('appointments:upcoming')
+
+    # GET request - show confirmation page
+    context = {
+        'appointment': appointment,
+        'title': 'Anuluj wizytę',
+    }
+    return render(request, 'appointments/cancel_appointment.html', context)

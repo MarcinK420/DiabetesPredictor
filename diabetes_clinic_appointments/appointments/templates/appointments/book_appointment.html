@@ -10,17 +10,25 @@
             <a href="{% url 'patients:dashboard' %}" class="btn btn-outline-secondary">Powrót do panelu</a>
         </div>
 
-        <div class="alert alert-info mb-4">
-            <i class="fas fa-info-circle"></i>
-            <strong>Informacja:</strong> Do wyboru są tylko dostępne terminy dla danego lekarza. Wizyty można umawiać w godzinach 8:00-17:00, od poniedziałku do piątku.
-        </div>
+        {% if cooldown_info and cooldown_info.active %}
+            <div class="alert alert-warning mb-4">
+                <i class="fas fa-clock"></i>
+                <strong>Ograniczenie czasowe:</strong> Musisz odczekać {{ cooldown_info.minutes }} minut i {{ cooldown_info.seconds }} sekund
+                po ostatnim anulowaniu przed zapisaniem się na nową wizytę.
+            </div>
+        {% else %}
+            <div class="alert alert-info mb-4">
+                <i class="fas fa-info-circle"></i>
+                <strong>Informacja:</strong> Do wyboru są tylko dostępne terminy dla danego lekarza. Wizyty można umawiać w godzinach 8:00-17:00, od poniedziałku do piątku.
+            </div>
+        {% endif %}
 
         <div class="card">
             <div class="card-header">
                 <h5>Formularz rezerwacji wizyty</h5>
             </div>
             <div class="card-body">
-                <form method="post" novalidate>
+                <form method="post" novalidate {% if cooldown_info and cooldown_info.active %}style="pointer-events: none; opacity: 0.6;"{% endif %}>
                     {% csrf_token %}
 
                     {% if form.non_field_errors %}
@@ -92,8 +100,14 @@
                         <div class="col-12">
                             <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                                 <a href="{% url 'patients:dashboard' %}" class="btn btn-secondary me-md-2">Anuluj</a>
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-calendar-check"></i> Umów wizytę
+                                <button type="submit" class="btn btn-primary"
+                                        {% if cooldown_info and cooldown_info.active %}disabled{% endif %}>
+                                    <i class="fas fa-calendar-check"></i>
+                                    {% if cooldown_info and cooldown_info.active %}
+                                        Odczekaj {{ cooldown_info.minutes }}:{{ cooldown_info.seconds|stringformat:"02d" }}
+                                    {% else %}
+                                        Umów wizytę
+                                    {% endif %}
                                 </button>
                             </div>
                         </div>
