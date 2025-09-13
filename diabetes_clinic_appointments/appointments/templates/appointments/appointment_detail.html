@@ -1,0 +1,111 @@
+{% extends 'authentication/base.html' %}
+
+{% block title %}Szczegóły wizyty - Klinika Diabetologiczna{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Szczegóły wizyty</h2>
+            <a href="{% url 'appointments:patient_history' %}" class="btn btn-outline-secondary">Powrót do historii</a>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Informacje o wizycie</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-3"><strong>Data i godzina:</strong></div>
+                            <div class="col-md-9">{{ appointment.appointment_date|date:"l, d F Y H:i" }}</div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-3"><strong>Lekarz:</strong></div>
+                            <div class="col-md-9">Dr. {{ appointment.doctor.user.first_name }} {{ appointment.doctor.user.last_name }}</div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-3"><strong>Specjalizacja:</strong></div>
+                            <div class="col-md-9">{{ appointment.doctor.get_specialization_display }}</div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-3"><strong>Powód wizyty:</strong></div>
+                            <div class="col-md-9">{{ appointment.reason }}</div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-3"><strong>Status:</strong></div>
+                            <div class="col-md-9">
+                                {% if appointment.status == 'scheduled' %}
+                                    <span class="badge bg-primary fs-6">{{ appointment.get_status_display }}</span>
+                                {% elif appointment.status == 'completed' %}
+                                    <span class="badge bg-success fs-6">{{ appointment.get_status_display }}</span>
+                                {% elif appointment.status == 'cancelled' %}
+                                    <span class="badge bg-danger fs-6">{{ appointment.get_status_display }}</span>
+                                {% else %}
+                                    <span class="badge bg-warning fs-6">{{ appointment.get_status_display }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-3"><strong>Czas trwania:</strong></div>
+                            <div class="col-md-9">{{ appointment.duration_minutes }} minut</div>
+                        </div>
+                        
+                        {% if appointment.notes %}
+                        <div class="row mb-3">
+                            <div class="col-md-3"><strong>Notatki z wizyty:</strong></div>
+                            <div class="col-md-9">
+                                <div class="border rounded p-3 bg-light">
+                                    {{ appointment.notes|linebreaks }}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Informacje o lekarzu</h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Adres gabinetu:</strong><br>
+                        {{ appointment.doctor.office_address|linebreaks }}</p>
+                        
+                        <p><strong>Doświadczenie:</strong><br>
+                        {{ appointment.doctor.years_of_experience }} lat</p>
+                        
+                        <p><strong>Opłata za konsultację:</strong><br>
+                        {{ appointment.doctor.consultation_fee }} zł</p>
+                        
+                        {% if appointment.doctor.bio %}
+                        <p><strong>O lekarzu:</strong><br>
+                        {{ appointment.doctor.bio|truncatewords:30|linebreaks }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if appointment.status == 'scheduled' %}
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5>Akcje</h5>
+                    </div>
+                    <div class="card-body">
+                        <a href="#" class="btn btn-warning btn-sm w-100 mb-2">Edytuj wizytę</a>
+                        <a href="#" class="btn btn-danger btn-sm w-100">Anuluj wizytę</a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

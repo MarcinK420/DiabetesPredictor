@@ -1,0 +1,96 @@
+{% extends 'authentication/base.html' %}
+
+{% block title %}Historia wizyt - Klinika Diabetologiczna{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Historia wizyt</h2>
+            <a href="{% url 'patients:dashboard' %}" class="btn btn-outline-secondary">Powrót do panelu</a>
+        </div>
+        
+        {% if appointments %}
+            <div class="card">
+                <div class="card-header">
+                    <h5>Twoje wizyty ({{ appointments.paginator.count }} w sumie)</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Data i godzina</th>
+                                    <th>Lekarz</th>
+                                    <th>Powód wizyty</th>
+                                    <th>Status</th>
+                                    <th>Akcje</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for appointment in appointments %}
+                                <tr>
+                                    <td>{{ appointment.appointment_date|date:"d.m.Y H:i" }}</td>
+                                    <td>Dr. {{ appointment.doctor.user.first_name }} {{ appointment.doctor.user.last_name }}</td>
+                                    <td>{{ appointment.reason }}</td>
+                                    <td>
+                                        {% if appointment.status == 'scheduled' %}
+                                            <span class="badge bg-primary">{{ appointment.get_status_display }}</span>
+                                        {% elif appointment.status == 'completed' %}
+                                            <span class="badge bg-success">{{ appointment.get_status_display }}</span>
+                                        {% elif appointment.status == 'cancelled' %}
+                                            <span class="badge bg-danger">{{ appointment.get_status_display }}</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">{{ appointment.get_status_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'appointments:detail' appointment.id %}" class="btn btn-sm btn-outline-primary">Szczegóły</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    {% if appointments.has_other_pages %}
+                    <nav aria-label="Paginacja wizyt">
+                        <ul class="pagination justify-content-center">
+                            {% if appointments.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1">&laquo; Pierwsza</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ appointments.previous_page_number }}">Poprzednia</a>
+                                </li>
+                            {% endif %}
+                            
+                            <li class="page-item active">
+                                <span class="page-link">
+                                    Strona {{ appointments.number }} z {{ appointments.paginator.num_pages }}
+                                </span>
+                            </li>
+                            
+                            {% if appointments.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ appointments.next_page_number }}">Następna</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ appointments.paginator.num_pages }}">Ostatnia &raquo;</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                </div>
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                <h4>Brak wizyt</h4>
+                <p>Nie masz jeszcze żadnych wizyt w systemie.</p>
+                <a href="#" class="btn btn-primary">Umów pierwszą wizytę</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
