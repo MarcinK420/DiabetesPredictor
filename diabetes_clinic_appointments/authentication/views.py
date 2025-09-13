@@ -36,17 +36,6 @@ def register_patient(request):
     
     return render(request, 'authentication/register_patient.html', {'form': form})
 
-def register_doctor(request):
-    if request.method == 'POST':
-        form = DoctorRegistrationForm(request.POST)
-        if form.is_valid():
-            user = form.save()
-            messages.success(request, 'Konto lekarza zostało utworzone pomyślnie!')
-            return redirect('authentication:login')
-    else:
-        form = DoctorRegistrationForm()
-    
-    return render(request, 'authentication/register_doctor.html', {'form': form})
 
 @login_required
 def logout_view(request):
