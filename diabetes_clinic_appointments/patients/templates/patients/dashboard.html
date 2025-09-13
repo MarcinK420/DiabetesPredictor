@@ -3,77 +3,253 @@
 {% block title %}Panel Pacjenta - Klinika Diabetologiczna{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-12">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>Panel Pacjenta</h2>
-            <a href="{% url 'authentication:logout' %}" class="btn btn-outline-danger">Wyloguj</a>
-        </div>
-        
-        {% if messages %}
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+<!-- FR-10: Strona główna pacjenta -->
+<div class="container-fluid">
+    <!-- Header with greeting -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="display-6 mb-2">Dzień dobry, {{ user.first_name }}!</h1>
+                    <p class="text-muted mb-0">Witaj w systemie kliniki diabetologicznej</p>
                 </div>
-            {% endfor %}
-        {% endif %}
-        
-        <div class="alert alert-success">
-            <h4>Witaj, {{ user.first_name }} {{ user.last_name }}!</h4>
-            <p>Jesteś zalogowany jako pacjent w systemie kliniki diabetologicznej.</p>
+                <div>
+                    <a href="{% url 'authentication:logout' %}" class="btn btn-outline-danger">
+                        <i class="fas fa-sign-out-alt"></i> Wyloguj
+                    </a>
+                </div>
+            </div>
         </div>
-        
-        <div class="row">
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">
-                        <h5>Twoje dane</h5>
+    </div>
+
+    <!-- Messages -->
+    {% if messages %}
+        <div class="row mb-4">
+            <div class="col-12">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
-                    <div class="card-body">
-                        {% if user.patient_profile %}
-                            <p><strong>Typ cukrzycy:</strong> {{ user.patient_profile.get_diabetes_type_display }}</p>
-                            <p><strong>Data diagnozy:</strong> {{ user.patient_profile.diagnosis_date }}</p>
-                            <p><strong>PESEL:</strong> {{ user.patient_profile.pesel }}</p>
-                            <p><strong>Telefon:</strong> {{ user.phone_number|default:"Nie podano" }}</p>
-                        {% else %}
-                            <p class="text-warning">Brak profilu pacjenta</p>
-                        {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Quick Stats Overview -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Nadchodzące wizyty</h6>
+                            <h3 class="mb-0">{{ upcoming_count }}</h3>
+                        </div>
+                        <div>
+                            <i class="fas fa-calendar-check fa-2x opacity-75"></i>
+                        </div>
                     </div>
                 </div>
             </div>
-            
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">
-                        <h5>Szybkie akcje</h5>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Wszystkich wizyt</h6>
+                            <h3 class="mb-0">{{ total_appointments }}</h3>
+                        </div>
+                        <div>
+                            <i class="fas fa-history fa-2x opacity-75"></i>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        {% if cooldown_info and cooldown_info.active %}
-                            <button class="btn btn-warning mb-2 w-100" disabled>
-                                <i class="fas fa-clock"></i> Odczekaj {{ cooldown_info.minutes }}:{{ cooldown_info.seconds|stringformat:"02d" }}
-                            </button>
-                            <small class="text-muted d-block mb-2">
-                                Musisz odczekać po anulowaniu wizyty przed umówieniem nowej.
-                            </small>
-                        {% else %}
-                            <a href="{% url 'appointments:book_appointment' %}" class="btn btn-primary mb-2 w-100">
-                                <i class="fas fa-calendar-plus"></i> Umów wizytę
-                            </a>
-                        {% endif %}
-                        <a href="{% url 'appointments:upcoming' %}" class="btn btn-outline-primary mb-2 w-100">
-                            <i class="fas fa-calendar-check"></i> Nadchodzące wizyty
-                        </a>
-                        <a href="{% url 'appointments:patient_history' %}" class="btn btn-outline-primary mb-2 w-100">
-                            <i class="fas fa-history"></i> Historia wizyt
-                        </a>
-                        <a href="{% url 'patients:profile' %}" class="btn btn-outline-secondary w-100">
-                            <i class="fas fa-user"></i> Mój profil
-                        </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Typ cukrzycy</h6>
+                            <p class="mb-0">{{ patient.get_diabetes_type_display }}</p>
+                        </div>
+                        <div>
+                            <i class="fas fa-heartbeat fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Wiek</h6>
+                            <h3 class="mb-0">{{ patient.get_age }} lat</h3>
+                        </div>
+                        <div>
+                            <i class="fas fa-birthday-cake fa-2x opacity-75"></i>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Main Navigation Cards (FR-10 requirement) -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h3 class="mb-3">Główne funkcje</h3>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <!-- Profile Card -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100 shadow-sm border-0 navigation-card">
+                <div class="card-body text-center p-4">
+                    <div class="mb-3">
+                        <i class="fas fa-user-circle fa-4x text-primary"></i>
+                    </div>
+                    <h5 class="card-title">Mój Profil</h5>
+                    <p class="card-text text-muted">
+                        Zarządzaj swoimi danymi osobowymi, kontaktowymi i medycznymi.
+                        Sprawdź informacje o swoim koncie.
+                    </p>
+                    <a href="{% url 'patients:profile' %}" class="btn btn-primary btn-lg w-100">
+                        <i class="fas fa-user me-2"></i>Przejdź do profilu
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Appointments Card -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100 shadow-sm border-0 navigation-card">
+                <div class="card-body text-center p-4">
+                    <div class="mb-3">
+                        <i class="fas fa-calendar-plus fa-4x text-success"></i>
+                    </div>
+                    <h5 class="card-title">Wizyty</h5>
+                    <p class="card-text text-muted">
+                        Umów nową wizytę, sprawdź nadchodzące terminy i zarządzaj swoimi rezerwacjami.
+                    </p>
+                    {% if cooldown_info and cooldown_info.active %}
+                        <button class="btn btn-warning btn-lg w-100" disabled>
+                            <i class="fas fa-clock me-2"></i>Odczekaj {{ cooldown_info.minutes }}:{{ cooldown_info.seconds|stringformat:"02d" }}
+                        </button>
+                        <small class="text-muted d-block mt-2">
+                            Musisz odczekać po anulowaniu wizyty
+                        </small>
+                    {% else %}
+                        <a href="{% url 'appointments:book_appointment' %}" class="btn btn-success btn-lg w-100">
+                            <i class="fas fa-calendar-plus me-2"></i>Umów wizytę
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- History Card -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100 shadow-sm border-0 navigation-card">
+                <div class="card-body text-center p-4">
+                    <div class="mb-3">
+                        <i class="fas fa-history fa-4x text-info"></i>
+                    </div>
+                    <h5 class="card-title">Historia Wizyt</h5>
+                    <p class="card-text text-muted">
+                        Przeglądaj historię swoich wizyt, sprawdź wyniki badań i poprzednie konsultacje.
+                    </p>
+                    <a href="{% url 'appointments:patient_history' %}" class="btn btn-info btn-lg w-100">
+                        <i class="fas fa-history me-2"></i>Zobacz historię
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions Row -->
+    <div class="row mb-4">
+        <div class="col-lg-6 mb-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-tachometer-alt"></i> Szybkie akcje</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6 mb-2">
+                            <a href="{% url 'appointments:upcoming' %}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-calendar-check"></i><br>
+                                <small>Nadchodzące</small>
+                            </a>
+                        </div>
+                        <div class="col-6 mb-2">
+                            <a href="{% url 'patients:edit_profile' %}" class="btn btn-outline-secondary w-100">
+                                <i class="fas fa-edit"></i><br>
+                                <small>Edytuj profil</small>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upcoming Appointment Info -->
+        <div class="col-lg-6 mb-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-bell"></i> Najbliższa wizyta</h5>
+                </div>
+                <div class="card-body">
+                    {% if next_appointment %}
+                        <div class="d-flex align-items-center">
+                            <div class="me-3">
+                                <i class="fas fa-calendar-day fa-2x text-primary"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-1">{{ next_appointment.appointment_date|date:"l, j F Y" }}</h6>
+                                <p class="mb-1"><strong>{{ next_appointment.appointment_date|time:"H:i" }}</strong></p>
+                                <small class="text-muted">Dr. {{ next_appointment.doctor.user.first_name }} {{ next_appointment.doctor.user.last_name }}</small>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted">
+                            <i class="fas fa-calendar-times fa-2x mb-2"></i>
+                            <p class="mb-0">Brak zaplanowanych wizyt</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+<style>
+.navigation-card {
+    transition: transform 0.2s ease-in-out;
+    cursor: pointer;
+}
+
+.navigation-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+}
+
+.display-6 {
+    font-weight: 300;
+}
+
+.opacity-75 {
+    opacity: 0.75;
+}
+</style>
+
 {% endblock %}

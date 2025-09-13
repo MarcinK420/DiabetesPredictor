@@ -5,11 +5,13 @@ from .forms import PatientProfileForm
 
 @login_required
 def dashboard(request):
+    """FR-10: Strona główna pacjenta"""
     if not request.user.is_patient():
         return redirect('authentication:login')
 
-    # Check cooldown status for appointment booking button
     patient = request.user.patient_profile
+
+    # Check cooldown status for appointment booking button
     cooldown_info = None
     if not patient.can_book_appointment():
         remaining_time = patient.time_until_can_book()
@@ -22,8 +24,27 @@ def dashboard(request):
             'seconds': seconds,
         }
 
+    # Get dashboard statistics
+    next_appointment = patient.get_next_appointment()
+    last_appointment = patient.get_last_appointment()
+    total_appointments = patient.get_total_appointments()
+
+    # Get upcoming appointments count
+    from appointments.models import Appointment
+    from django.utils import timezone
+    upcoming_count = Appointment.objects.filter(
+        patient=patient,
+        status='scheduled',
+        appointment_date__gte=timezone.now()
+    ).count()
+
     context = {
+        'patient': patient,
         'cooldown_info': cooldown_info,
+        'next_appointment': next_appointment,
+        'last_appointment': last_appointment,
+        'total_appointments': total_appointments,
+        'upcoming_count': upcoming_count,
     }
 
     return render(request, 'patients/dashboard.html', context)
