@@ -212,12 +212,12 @@
                                             <!-- Actions -->
                                             <td class="text-center">
                                                 <div class="btn-group" role="group">
-                                                    <button type="button" class="btn btn-sm btn-outline-primary" title="Zobacz kartę pacjenta">
+                                                    <a href="{% url 'doctors:patient_detail' patient.id %}" class="btn btn-sm btn-outline-primary" title="Zobacz kartę pacjenta">
                                                         <i class="fas fa-eye"></i>
-                                                    </button>
-                                                    <button type="button" class="btn btn-sm btn-outline-info" title="Historia wizyt">
+                                                    </a>
+                                                    <a href="{% url 'doctors:patient_detail' patient.id %}" class="btn btn-sm btn-outline-info" title="Historia wizyt">
                                                         <i class="fas fa-history"></i>
-                                                    </button>
+                                                    </a>
                                                 </div>
                                             </td>
                                         </tr>

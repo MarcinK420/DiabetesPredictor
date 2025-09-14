@@ -1,0 +1,473 @@
+{% extends 'authentication/base.html' %}
+
+{% block title %}Karta Pacjenta - {{ patient.user.first_name }} {{ patient.user.last_name }} - Klinika Diabetologiczna{% endblock %}
+
+{% block content %}
+<!-- FR-14: Podejrzenie karty pacjenta -->
+<div class="container-fluid">
+    <!-- Header with breadcrumb -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'doctors:dashboard' %}">
+                            <i class="fas fa-home"></i> Panel Lekarza
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'doctors:patients_list' %}">
+                            <i class="fas fa-users"></i> Spis Pacjentów
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ patient.user.first_name }} {{ patient.user.last_name }}</li>
+                </ol>
+            </nav>
+
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="display-6 mb-2">
+                        <i class="fas fa-user-circle text-primary"></i>
+                        Karta Pacjenta
+                    </h1>
+                    <p class="text-muted mb-0">{{ patient.user.first_name }} {{ patient.user.last_name }} - Historia współpracy z Dr. {{ doctor.user.last_name }}</p>
+                </div>
+                <div>
+                    <a href="{% url 'doctors:patients_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Powrót do listy
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Messages -->
+    {% if messages %}
+        <div class="row mb-4">
+            <div class="col-12">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Patient Information -->
+    <div class="row mb-4">
+        <!-- Basic Information -->
+        <div class="col-lg-8 mb-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-id-card"></i>
+                        Informacje o pacjencie
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Imię i nazwisko</label>
+                                <p class="fw-bold">{{ patient.user.first_name }} {{ patient.user.last_name }}</p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Wiek</label>
+                                <p>{{ patient.get_age }} lat</p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label text-muted">PESEL</label>
+                                <p>{{ patient.get_masked_pesel }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Email</label>
+                                <p>
+                                    <i class="fas fa-envelope text-muted"></i>
+                                    {{ patient.user.email }}
+                                </p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Telefon</label>
+                                <p>
+                                    <i class="fas fa-phone text-muted"></i>
+                                    {{ patient.user.phone_number|default:"Brak danych" }}
+                                </p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Adres</label>
+                                <p>
+                                    <i class="fas fa-map-marker-alt text-muted"></i>
+                                    {{ patient.address|truncatechars:50 }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Medical Information -->
+        <div class="col-lg-4 mb-4">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-heartbeat"></i>
+                        Informacje medyczne
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Typ cukrzycy</label>
+                        <p>
+                            <span class="badge bg-info fs-6">{{ patient.get_diabetes_type_display }}</span>
+                        </p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Data diagnozy</label>
+                        <p>{{ patient.diagnosis_date|date:"j F Y" }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Kontakt awaryjny</label>
+                        <p>
+                            <strong>{{ patient.emergency_contact_name }}</strong><br>
+                            <small class="text-muted">{{ patient.get_masked_emergency_phone }}</small>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Medical Details -->
+    <div class="row mb-4">
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-pills"></i>
+                        Aktualne leki
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if patient.current_medications %}
+                        <p>{{ patient.current_medications }}</p>
+                    {% else %}
+                        <p class="text-muted"><i>Brak informacji o lekach</i></p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Alergie
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if patient.allergies %}
+                        <p>{{ patient.allergies }}</p>
+                    {% else %}
+                        <p class="text-muted"><i>Brak informacji o alergiach</i></p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Overview -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Wszystkich wizyt</h6>
+                            <h3 class="mb-0">{{ total_appointments }}</h3>
+                        </div>
+                        <div>
+                            <i class="fas fa-calendar fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Zakończone</h6>
+                            <h3 class="mb-0">{{ completed_appointments }}</h3>
+                        </div>
+                        <div>
+                            <i class="fas fa-check-circle fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Zaplanowane</h6>
+                            <h3 class="mb-0">{{ scheduled_appointments }}</h3>
+                        </div>
+                        <div>
+                            <i class="fas fa-calendar-plus fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Anulowane</h6>
+                            <h3 class="mb-0">{{ cancelled_appointments }}</h3>
+                        </div>
+                        <div>
+                            <i class="fas fa-times-circle fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Info Row -->
+    <div class="row mb-4">
+        <div class="col-lg-6 mb-3">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-clock"></i>
+                        Ostatnia wizyta
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if last_appointment %}
+                        <div class="d-flex align-items-center">
+                            <div class="me-3">
+                                <i class="fas fa-calendar-day fa-2x text-success"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-1">{{ last_appointment.appointment_date|date:"l, j F Y" }}</h6>
+                                <p class="mb-1"><strong>{{ last_appointment.appointment_date|time:"H:i" }}</strong></p>
+                                <small class="text-muted">{{ last_appointment.reason }}</small>
+                                {% if last_appointment.notes %}
+                                    <p class="mt-2 mb-0"><small><strong>Notatki:</strong> {{ last_appointment.notes|truncatechars:100 }}</small></p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted">
+                            <i class="fas fa-calendar-times fa-2x mb-2"></i>
+                            <p class="mb-0">Brak zakończonych wizyt</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-3">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-calendar-plus"></i>
+                        Najbliższa wizyta
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if next_appointment %}
+                        <div class="d-flex align-items-center">
+                            <div class="me-3">
+                                <i class="fas fa-calendar-day fa-2x text-primary"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-1">{{ next_appointment.appointment_date|date:"l, j F Y" }}</h6>
+                                <p class="mb-1"><strong>{{ next_appointment.appointment_date|time:"H:i" }}</strong></p>
+                                <small class="text-muted">{{ next_appointment.reason }}</small>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted">
+                            <i class="fas fa-calendar-times fa-2x mb-2"></i>
+                            <p class="mb-0">Brak zaplanowanych wizyt</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Appointment History -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history"></i>
+                        Historia wizyt
+                        {% if page_obj.paginator.num_pages > 1 %}
+                            <span class="badge bg-secondary ms-2">Strona {{ page_obj.number }} z {{ page_obj.paginator.num_pages }}</span>
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if page_obj %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Data</th>
+                                        <th>Godzina</th>
+                                        <th>Status</th>
+                                        <th>Powód wizyty</th>
+                                        <th>Notatki</th>
+                                        <th class="text-center">Akcje</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for appointment in page_obj %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ appointment.appointment_date|date:"j M Y" }}</strong><br>
+                                                <small class="text-muted">{{ appointment.appointment_date|date:"l" }}</small>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">{{ appointment.appointment_date|time:"H:i" }}</span>
+                                            </td>
+                                            <td>
+                                                {% if appointment.status == 'completed' %}
+                                                    <span class="badge bg-success">{{ appointment.get_status_display }}</span>
+                                                {% elif appointment.status == 'scheduled' %}
+                                                    <span class="badge bg-primary">{{ appointment.get_status_display }}</span>
+                                                {% elif appointment.status == 'cancelled' %}
+                                                    <span class="badge bg-warning">{{ appointment.get_status_display }}</span>
+                                                {% else %}
+                                                    <span class="badge bg-danger">{{ appointment.get_status_display }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ appointment.reason|truncatechars:40 }}</td>
+                                            <td>
+                                                {% if appointment.notes %}
+                                                    <span class="text-muted">{{ appointment.notes|truncatechars:50 }}</span>
+                                                {% else %}
+                                                    <small class="text-muted"><i>Brak notatek</i></small>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-center">
+                                                {% if appointment.status == 'completed' %}
+                                                    <button type="button" class="btn btn-sm btn-outline-success" title="Dodaj wyniki" disabled>
+                                                        <i class="fas fa-plus"></i>
+                                                    </button>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if page_obj.paginator.num_pages > 1 %}
+                            <div class="card-footer">
+                                <nav aria-label="Appointment history pagination">
+                                    <ul class="pagination pagination-sm mb-0 justify-content-center">
+                                        {% if page_obj.has_previous %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page=1">&laquo; Pierwsza</a>
+                                            </li>
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Poprzednia</a>
+                                            </li>
+                                        {% endif %}
+
+                                        {% for num in page_obj.paginator.page_range %}
+                                            {% if page_obj.number == num %}
+                                                <li class="page-item active">
+                                                    <span class="page-link">{{ num }}</span>
+                                                </li>
+                                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                                <li class="page-item">
+                                                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                                </li>
+                                            {% endif %}
+                                        {% endfor %}
+
+                                        {% if page_obj.has_next %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Następna</a>
+                                            </li>
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Ostatnia &raquo;</a>
+                                            </li>
+                                        {% endif %}
+                                    </ul>
+                                </nav>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">Brak historii wizyt</h5>
+                            <p class="text-muted">Ten pacjent nie miał jeszcze wizyt u Ciebie.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.opacity-75 {
+    opacity: 0.75;
+}
+
+.breadcrumb {
+    background-color: transparent;
+    padding: 0;
+}
+
+.form-label {
+    font-size: 0.9em;
+    font-weight: 600;
+}
+
+.card {
+    transition: box-shadow 0.15s ease-in-out;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.025);
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.badge {
+    font-size: 0.8em;
+}
+
+.fs-6 {
+    font-size: 1rem !important;
+}
+</style>
+
+{% endblock %}

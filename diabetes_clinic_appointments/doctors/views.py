@@ -1,8 +1,9 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.core.paginator import Paginator
 from django.db.models import Count, Q
+from django.http import Http404
 
 @login_required
 def dashboard(request):
@@ -176,3 +177,77 @@ def patients_list(request):
     }
 
     return render(request, 'doctors/patients_list.html', context)
+
+
+@login_required
+def patient_detail(request, patient_id):
+    """FR-14: Podejrzenie karty pacjenta przez lekarza"""
+    if not request.user.is_doctor():
+        return redirect('authentication:login')
+
+    doctor = request.user.doctor_profile
+
+    # Get patient and verify doctor has access (had appointments with this patient)
+    from appointments.models import Appointment
+    from patients.models import Patient
+
+    patient = get_object_or_404(Patient, id=patient_id)
+
+    # Verify doctor has access to this patient (had appointments together)
+    has_access = Appointment.objects.filter(
+        doctor=doctor,
+        patient=patient
+    ).exists()
+
+    if not has_access:
+        raise Http404("Nie masz uprawnień do przeglądania tej karty pacjenta.")
+
+    # Get appointment history for this patient-doctor combination
+    appointments_history = Appointment.objects.filter(
+        doctor=doctor,
+        patient=patient
+    ).order_by('-appointment_date')
+
+    # Paginate appointment history
+    paginator = Paginator(appointments_history, 10)  # 10 appointments per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Statistics for this patient with this doctor
+    total_appointments = appointments_history.count()
+    completed_appointments = appointments_history.filter(status='completed').count()
+    cancelled_appointments = appointments_history.filter(status='cancelled').count()
+    scheduled_appointments = appointments_history.filter(
+        status='scheduled',
+        appointment_date__gte=timezone.now()
+    ).count()
+
+    # Last and next appointments
+    last_appointment = appointments_history.filter(status='completed').first()
+    next_appointment = appointments_history.filter(
+        status='scheduled',
+        appointment_date__gte=timezone.now()
+    ).order_by('appointment_date').first()
+
+    # Appointments by status
+    appointments_by_status = {
+        'completed': appointments_history.filter(status='completed'),
+        'scheduled': appointments_history.filter(status='scheduled'),
+        'cancelled': appointments_history.filter(status='cancelled'),
+        'no_show': appointments_history.filter(status='no_show'),
+    }
+
+    context = {
+        'doctor': doctor,
+        'patient': patient,
+        'page_obj': page_obj,
+        'total_appointments': total_appointments,
+        'completed_appointments': completed_appointments,
+        'cancelled_appointments': cancelled_appointments,
+        'scheduled_appointments': scheduled_appointments,
+        'last_appointment': last_appointment,
+        'next_appointment': next_appointment,
+        'appointments_by_status': appointments_by_status,
+    }
+
+    return render(request, 'doctors/patient_detail.html', context)
