@@ -2,7 +2,7 @@
 
 ## 📋 Opis Projektu
 
-System kliniki diabetologicznej umożliwiający pacjentom zarządzanie wizytami, przeglądanie profilu medycznego oraz komunikację z lekarzami. Projekt został zaimplementowany w Django z pełną funkcjonalnością CRUD, systemem autoryzacji i zaawansowanymi mechanizmami bezpieczeństwa.
+System kliniki diabetologicznej umożliwiający **pacjentom** zarządzanie wizytami i profilami medycznymi oraz **lekarzom** zarządzanie kalendarzem i danymi pacjentów. Projekt został zaimplementowany w Django z pełną funkcjonalnością CRUD, systemem autoryzacji i zaawansowanymi mechanizmami bezpieczeństwa.
 
 ## ✨ Zaimplementowane Wymagania Funkcjonalne
 
@@ -58,6 +58,51 @@ System kliniki diabetologicznej umożliwiający pacjentom zarządzanie wizytami,
   - Informacje o najbliższej wizycie
   - Responsive design z hover effects
 - **Pliki**: `patients/views.py:dashboard`, `patients/templates/patients/dashboard.html`
+
+## 👩‍⚕️ Funkcje dla Lekarzy
+
+### ✅ **FR-11: Strona główna lekarza** (Priorytet: W)
+- **Opis**: Dashboard lekarza z nawigacją do: Profil, Wizyty, Spis pacjentów
+- **URL**: `/doctors/dashboard/`
+- **Funkcjonalności**:
+  - Powitanie "Dzień dobry, Dr. [Imię]!"
+  - Statystyki: dzisiejsze wizyty, nadchodzące (7 dni), wszyscy pacjenci, doświadczenie
+  - Karty nawigacyjne do głównych funkcji
+  - Informacje o najbliższej wizycie
+- **Pliki**: `doctors/views.py:dashboard`, `doctors/templates/doctors/dashboard.html`
+
+### ✅ **FR-12: Najbliższe wizyty** (Priorytet: M)
+- **Opis**: Panel z kalendarzem/listą najbliższych wizyt lekarza
+- **URL**: `/doctors/upcoming/`
+- **Funkcjonalności**:
+  - Lista wizyt pogrupowanych według dat
+  - Dzisiejsze wizyty wyróżnione
+  - Statystyki: dzisiaj, najbliższe 7 dni, wszystkie nadchodzące
+  - Informacje o pacjentach: kontakt, powód wizyty
+- **Pliki**: `doctors/views.py:upcoming_appointments`, `doctors/templates/doctors/upcoming_appointments.html`
+
+### ✅ **FR-13: Spis pacjentów** (Priorytet: W)
+- **Opis**: Panel z listą pacjentów danego lekarza
+- **URL**: `/doctors/patients/`
+- **Funkcjonalności**:
+  - Tabela pacjentów z pełnymi danymi medycznymi
+  - Statystyki wizyt dla każdego pacjenta
+  - Ostatnia i najbliższa wizyta
+  - Paginacja (10 pacjentów na stronę)
+  - Linki do szczegółowych kart pacjentów
+- **Pliki**: `doctors/views.py:patients_list`, `doctors/templates/doctors/patients_list.html`
+
+### ✅ **FR-14: Podejrzenie karty pacjenta** (Priorytet: W)
+- **Opis**: Szczegółowa karta pacjenta z historią badań
+- **URL**: `/doctors/patient/<id>/`
+- **Funkcjonalności**:
+  - Kompletne dane pacjenta (osobowe, medyczne, leki, alergie)
+  - Historia wizyt tylko z danym lekarzem
+  - Statystyki współpracy (wszystkie/zakończone/zaplanowane/anulowane)
+  - Kontrola bezpieczeństwa (lekarz widzi tylko swoich pacjentów)
+  - Maskowanie wrażliwych danych (PESEL, telefon awaryjny)
+  - Paginacja historii wizyt
+- **Pliki**: `doctors/views.py:patient_detail`, `doctors/templates/doctors/patient_detail.html`
 
 ## 🏗️ Architektura Aplikacji
 
@@ -123,9 +168,10 @@ clinic_system/           # Main project directory
 - **Lekarze**: Dostęp do danych swoich pacjentów
 - **Superuser**: Pełny dostęp administracyjny
 
-### Ochrona Danych (FR-09)
+### Ochrona Danych (FR-09, FR-14)
 - **Maskowanie PESEL**: `85****45` zamiast pełnego numeru
 - **Kontrola dostępu**: `Patient.can_be_viewed_by(user)`
+- **Weryfikacja uprawnień lekarzy**: dostęp tylko do swoich pacjentów
 - **Wrażliwe pola**: Lista pól wymagających dodatkowej ochrony
 - **Walidacja formularzy**: Sprawdzanie poprawności danych
 
@@ -136,33 +182,63 @@ clinic_system/           # Main project directory
 
 ## 📊 Funkcjonalności Systemu
 
-### Zarządzanie Wizytami
+### 👤 Funkcjonalności Pacjenta
+
+#### Zarządzanie Wizytami
 1. **Rezerwacja** (FR-06) - pełna walidacja terminów
 2. **Edycja** (FR-07) - modyfikacja szczegółów wizyty
 3. **Anulowanie** (FR-08) - z potwierdzeniem i cooldown
 4. **Historia** - przeglądanie poprzednich wizyt
 5. **Nadchodzące** - lista zaplanowanych terminów
 
-### Profil Pacjenta (FR-09)
+#### Profil Pacjenta (FR-09)
 1. **Wyświetlanie** - kompletne dane osobowe i medyczne
 2. **Edycja** - modyfikacja wybranych pól
 3. **Bezpieczeństwo** - maskowanie wrażliwych danych
 4. **Statystyki** - informacje o wizytach
 
-### Dashboard (FR-10)
+#### Dashboard (FR-10)
 1. **Powitanie** - personalizowane "Dzień dobry"
 2. **Nawigacja** - karty do głównych sekcji
 3. **Statystyki** - przegląd kluczowych danych
 4. **Szybkie akcje** - najczęściej używane funkcje
 
+### 👩‍⚕️ Funkcjonalności Lekarza
+
+#### Dashboard Lekarza (FR-11)
+1. **Powitanie** - personalizowane "Dzień dobry, Dr. [Imię]"
+2. **Statystyki** - dzisiejsze wizyty, nadchodzące, pacjenci, doświadczenie
+3. **Nawigacja** - karty do: Profil, Wizyty, Spis Pacjentów
+4. **Szybkie akcje** - dostęp do najważniejszych funkcji
+
+#### Zarządzanie Kalendarzem (FR-12)
+1. **Najbliższe wizyty** - lista pogrupowana według dat
+2. **Dzisiejsze wizyty** - wyróżnione sekcja
+3. **Statystyki** - dzisiaj, tydzień, wszystkie nadchodzące
+4. **Informacje pacjentów** - kontakt, powód wizyty
+
+#### Zarządzanie Pacjentami (FR-13, FR-14)
+1. **Spis pacjentów** - tabela z pełnymi danymi medycznymi
+2. **Statystyki wizyt** - dla każdego pacjenta osobno
+3. **Szczegółowe karty** - kompletne dane z historią współpracy
+4. **Kontrola dostępu** - tylko współpracujący pacjenci
+5. **Paginacja** - wydajne przeglądanie dużych list
+
 ## 🛣️ Routing URLs
 
 ```python
-# Main URLs
+# URLs Pacjenta
 /patients/dashboard/              # FR-10: Dashboard pacjenta
 /patients/profile/               # FR-09: Profil pacjenta
 /patients/profile/edit/          # FR-09: Edycja profilu
 
+# URLs Lekarza
+/doctors/dashboard/              # FR-11: Dashboard lekarza
+/doctors/upcoming/               # FR-12: Najbliższe wizyty lekarza
+/doctors/patients/               # FR-13: Spis pacjentów
+/doctors/patient/<id>/           # FR-14: Karta pacjenta
+
+# URLs Wizyt
 /appointments/book/              # FR-06: Rezerwacja wizyty
 /appointments/edit/<id>/         # FR-07: Edycja wizyty
 /appointments/cancel/<id>/       # FR-08: Anulowanie wizyty
@@ -170,6 +246,7 @@ clinic_system/           # Main project directory
 /appointments/history/           # Historia wizyt
 /appointments/detail/<id>/       # Szczegóły wizyty
 
+# URLs Autoryzacji
 /auth/login/                     # Logowanie
 /auth/logout/                    # Wylogowanie
 ```
@@ -239,25 +316,26 @@ python manage.py check
 
 ## 📈 Status Implementacji
 
-### Zakończone (✅)
+### Zakończone (✅) - 9/10 wymagań (90%)
 - FR-06: Zapisywanie się na wizytę
 - FR-07: Edycja wizyty
 - FR-08: Anulowanie wizyty
 - FR-09: Karta z danymi pacjenta
 - FR-10: Strona główna pacjenta
-
-### Do implementacji
 - FR-11: Strona główna lekarza
 - FR-12: Najbliższe wizyty (dla lekarza)
 - FR-13: Spis pacjentów
 - FR-14: Podejrzenie karty pacjenta
-- FR-15: Wprowadzanie wyników
+
+### Do implementacji ⏳
+- FR-15: Wprowadzanie wyników (W)
 
 ## 🔧 Kluczowe Pliki
 
 ### Views
-- `patients/views.py` - Dashboard, profil, edycja profilu
-- `appointments/views.py` - CRUD wizyt (book, edit, cancel)
+- `patients/views.py` - Dashboard, profil, edycja profilu (FR-09, FR-10)
+- `doctors/views.py` - Dashboard lekarza, wizyty, pacjenci, karty (FR-11, FR-12, FR-13, FR-14)
+- `appointments/views.py` - CRUD wizyt (book, edit, cancel) (FR-06, FR-07, FR-08)
 
 ### Models
 - `patients/models.py` - Patient model z metodami pomocniczymi
@@ -267,6 +345,10 @@ python manage.py check
 ### Templates
 - `patients/templates/patients/dashboard.html` - FR-10
 - `patients/templates/patients/profile.html` - FR-09
+- `doctors/templates/doctors/dashboard.html` - FR-11
+- `doctors/templates/doctors/upcoming_appointments.html` - FR-12
+- `doctors/templates/doctors/patients_list.html` - FR-13
+- `doctors/templates/doctors/patient_detail.html` - FR-14
 - `appointments/templates/appointments/book_appointment.html` - FR-06
 - `appointments/templates/appointments/edit_appointment.html` - FR-07
 - `appointments/templates/appointments/cancel_appointment.html` - FR-08
@@ -297,7 +379,7 @@ python manage.py check
 ---
 
 **Autor**: Marcin Kruk
-**Wersja**: v1.0 (Implementacja FR-06 do FR-10)
-**Data**: 13.09.2025
+**Wersja**: v2.0 (Implementacja FR-06 do FR-14)
+**Data**: 14.09.2025
 
-*System przygotowany zgodnie z wymaganiami funkcjonalnymi i gotowy do rozszerzenia o kolejne funkcje.*
+*System w pełni funkcjonalny dla pacjentów i lekarzy. 9/10 wymagań funkcjonalnych zaimplementowanych (90%). Pozostało tylko FR-15 (wprowadzanie wyników z oceną AI) do pełnego ukończenia projektu.*
