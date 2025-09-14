@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.core.paginator import Paginator
+from django.db.models import Count, Q
 
 @login_required
 def dashboard(request):
@@ -104,3 +105,74 @@ def upcoming_appointments(request):
     }
 
     return render(request, 'doctors/upcoming_appointments.html', context)
+
+
+@login_required
+def patients_list(request):
+    """FR-13: Spis pacjentów lekarza"""
+    if not request.user.is_doctor():
+        return redirect('authentication:login')
+
+    doctor = request.user.doctor_profile
+
+    # Get all patients who had appointments with this doctor
+    from appointments.models import Appointment
+    from patients.models import Patient
+
+    # Get unique patients with their appointment statistics
+    patients_with_appointments = Patient.objects.filter(
+        appointments__doctor=doctor
+    ).annotate(
+        total_appointments=Count('appointments', filter=Q(appointments__doctor=doctor)),
+        scheduled_appointments=Count(
+            'appointments',
+            filter=Q(appointments__doctor=doctor, appointments__status='scheduled', appointments__appointment_date__gte=timezone.now())
+        ),
+        completed_appointments=Count(
+            'appointments',
+            filter=Q(appointments__doctor=doctor, appointments__status='completed')
+        )
+    ).select_related('user').distinct().order_by('user__last_name', 'user__first_name')
+
+    # Get last and next appointments for each patient
+    patients_data = []
+    for patient in patients_with_appointments:
+        last_appointment = Appointment.objects.filter(
+            doctor=doctor,
+            patient=patient,
+            status='completed'
+        ).order_by('-appointment_date').first()
+
+        next_appointment = Appointment.objects.filter(
+            doctor=doctor,
+            patient=patient,
+            status='scheduled',
+            appointment_date__gte=timezone.now()
+        ).order_by('appointment_date').first()
+
+        patients_data.append({
+            'patient': patient,
+            'total_appointments': patient.total_appointments,
+            'scheduled_appointments': patient.scheduled_appointments,
+            'completed_appointments': patient.completed_appointments,
+            'last_appointment': last_appointment,
+            'next_appointment': next_appointment,
+        })
+
+    # Pagination
+    paginator = Paginator(patients_data, 10)  # 10 patients per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Statistics
+    total_patients = len(patients_data)
+    patients_with_scheduled = sum(1 for p in patients_data if p['scheduled_appointments'] > 0)
+
+    context = {
+        'doctor': doctor,
+        'page_obj': page_obj,
+        'total_patients': total_patients,
+        'patients_with_scheduled': patients_with_scheduled,
+    }
+
+    return render(request, 'doctors/patients_list.html', context)
