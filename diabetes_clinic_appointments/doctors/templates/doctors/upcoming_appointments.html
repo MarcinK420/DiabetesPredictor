@@ -1,0 +1,272 @@
+{% extends 'authentication/base.html' %}
+
+{% block title %}Najbliższe Wizyty - Klinika Diabetologiczna{% endblock %}
+
+{% block content %}
+<!-- FR-12: Najbliższe wizyty lekarza -->
+<div class="container-fluid">
+    <!-- Header with breadcrumb -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'doctors:dashboard' %}">
+                            <i class="fas fa-home"></i> Panel Lekarza
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item active" aria-current="page">Najbliższe Wizyty</li>
+                </ol>
+            </nav>
+
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="display-6 mb-2">Najbliższe Wizyty</h1>
+                    <p class="text-muted mb-0">Przegląd zaplanowanych wizyt - Dr. {{ doctor.user.first_name }} {{ doctor.user.last_name }}</p>
+                </div>
+                <div>
+                    <a href="{% url 'doctors:dashboard' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Powrót
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Messages -->
+    {% if messages %}
+        <div class="row mb-4">
+            <div class="col-12">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Statistics Overview -->
+    <div class="row mb-4">
+        <div class="col-lg-4 col-md-6 mb-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Dzisiaj</h6>
+                            <h3 class="mb-0">{{ today_count }}</h3>
+                        </div>
+                        <div>
+                            <i class="fas fa-calendar-day fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 col-md-6 mb-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Najbliższe 7 dni</h6>
+                            <h3 class="mb-0">{{ week_count }}</h3>
+                        </div>
+                        <div>
+                            <i class="fas fa-calendar-week fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 col-md-6 mb-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Wszystkie nadchodzące</h6>
+                            <h3 class="mb-0">{{ total_upcoming }}</h3>
+                        </div>
+                        <div>
+                            <i class="fas fa-calendar-check fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Today's Appointments Section -->
+    {% if today_appointments %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-primary">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-calendar-day"></i>
+                            Dzisiejsze wizyty - {{ current_date|date:"l, j F Y" }}
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            {% for appointment in today_appointments %}
+                                <div class="col-lg-6 col-md-12 mb-3">
+                                    <div class="card border-left-primary">
+                                        <div class="card-body">
+                                            <div class="row align-items-center">
+                                                <div class="col-3 text-center">
+                                                    <div class="time-display">
+                                                        <h4 class="text-primary mb-0">{{ appointment.appointment_date|time:"H:i" }}</h4>
+                                                        <small class="text-muted">{{ appointment.duration_minutes }} min</small>
+                                                    </div>
+                                                </div>
+                                                <div class="col-9">
+                                                    <h6 class="mb-1">
+                                                        <i class="fas fa-user"></i>
+                                                        {{ appointment.patient.user.first_name }} {{ appointment.patient.user.last_name }}
+                                                    </h6>
+                                                    <p class="mb-1">
+                                                        <i class="fas fa-clipboard-list"></i>
+                                                        {{ appointment.reason }}
+                                                    </p>
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-phone"></i>
+                                                        {{ appointment.patient.user.phone_number }}
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Upcoming Appointments by Date -->
+    {% if appointments_by_date %}
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-calendar-alt"></i>
+                            Nadchodzące wizyty
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% for date, appointments in appointments_by_date.items %}
+                            {% if date != current_date %}  <!-- Don't repeat today's appointments -->
+                                <div class="appointment-date-section mb-4">
+                                    <div class="date-header mb-3">
+                                        <h6 class="text-primary border-bottom pb-2">
+                                            <i class="fas fa-calendar"></i>
+                                            {{ date|date:"l, j F Y" }}
+                                            <span class="badge bg-secondary ms-2">{{ appointments|length }} wizyt</span>
+                                        </h6>
+                                    </div>
+
+                                    <div class="row">
+                                        {% for appointment in appointments %}
+                                            <div class="col-lg-6 col-md-12 mb-3">
+                                                <div class="card border-left-secondary">
+                                                    <div class="card-body">
+                                                        <div class="row align-items-center">
+                                                            <div class="col-3 text-center">
+                                                                <div class="time-display">
+                                                                    <h5 class="text-secondary mb-0">{{ appointment.appointment_date|time:"H:i" }}</h5>
+                                                                    <small class="text-muted">{{ appointment.duration_minutes }} min</small>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-9">
+                                                                <h6 class="mb-1">
+                                                                    <i class="fas fa-user"></i>
+                                                                    {{ appointment.patient.user.first_name }} {{ appointment.patient.user.last_name }}
+                                                                </h6>
+                                                                <p class="mb-1">
+                                                                    <i class="fas fa-clipboard-list"></i>
+                                                                    {{ appointment.reason }}
+                                                                </p>
+                                                                <small class="text-muted">
+                                                                    <i class="fas fa-phone"></i>
+                                                                    {{ appointment.patient.user.phone_number }}
+                                                                </small>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <!-- No appointments message -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-calendar-times fa-4x text-muted mb-3"></i>
+                        <h4 class="text-muted">Brak zaplanowanych wizyt</h4>
+                        <p class="text-muted">Obecnie nie masz żadnych nadchodzących wizyt w kalendarzu.</p>
+                        <a href="{% url 'doctors:dashboard' %}" class="btn btn-primary">
+                            <i class="fas fa-home"></i> Powrót do panelu
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+.border-left-primary {
+    border-left: 4px solid var(--bs-primary) !important;
+}
+
+.border-left-secondary {
+    border-left: 4px solid var(--bs-secondary) !important;
+}
+
+.time-display h4, .time-display h5 {
+    font-weight: bold;
+    font-family: 'Courier New', monospace;
+}
+
+.appointment-date-section:last-child {
+    margin-bottom: 0 !important;
+}
+
+.opacity-75 {
+    opacity: 0.75;
+}
+
+.card {
+    transition: box-shadow 0.15s ease-in-out;
+}
+
+.card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.breadcrumb {
+    background-color: transparent;
+    padding: 0;
+}
+
+.date-header h6 {
+    margin-bottom: 0;
+}
+</style>
+
+{% endblock %}
