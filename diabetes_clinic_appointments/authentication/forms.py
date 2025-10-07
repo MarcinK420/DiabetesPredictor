@@ -25,13 +25,23 @@ class PatientRegistrationForm(UserCreationForm):
         required=True,
         label='Typ cukrzycy'
     )
-    diagnosis_date = forms.DateField(required=True, label='Data diagnozy', widget=forms.DateInput(attrs={'type': 'date'}))
+    diagnosis_date = forms.DateField(required=False, label='Data diagnozy', widget=forms.DateInput(attrs={'type': 'date'}))
     current_medications = forms.CharField(widget=forms.Textarea, required=False, label='Aktualne leki')
     allergies = forms.CharField(widget=forms.Textarea, required=False, label='Alergie')
 
     class Meta:
         model = User
         fields = ('username', 'first_name', 'last_name', 'email', 'phone_number', 'password1', 'password2')
+
+    def clean(self):
+        cleaned_data = super().clean()
+        diabetes_type = cleaned_data.get('diabetes_type')
+        diagnosis_date = cleaned_data.get('diagnosis_date')
+
+        if diabetes_type and diabetes_type != 'healthy' and not diagnosis_date:
+            raise forms.ValidationError('Data diagnozy jest wymagana dla osób z cukrzycą.')
+
+        return cleaned_data
 
     def save(self, commit=True):
         user = super().save(commit=False)
@@ -51,7 +61,7 @@ class PatientRegistrationForm(UserCreationForm):
                 emergency_contact_name=self.cleaned_data['emergency_contact_name'],
                 emergency_contact_phone=self.cleaned_data['emergency_contact_phone'],
                 diabetes_type=self.cleaned_data['diabetes_type'],
-                diagnosis_date=self.cleaned_data['diagnosis_date'],
+                diagnosis_date=self.cleaned_data.get('diagnosis_date'),
                 current_medications=self.cleaned_data['current_medications'],
                 allergies=self.cleaned_data['allergies'],
             )

@@ -14,12 +14,13 @@ class Patient(models.Model):
     diabetes_type = models.CharField(
         max_length=15,
         choices=[
+            ('healthy', 'Zdrowy'),
             ('type1', 'Cukrzyca typu 1'),
             ('type2', 'Cukrzyca typu 2'),
             ('gestational', 'Cukrzyca ciążowa'),
         ]
     )
-    diagnosis_date = models.DateField()
+    diagnosis_date = models.DateField(null=True, blank=True)
     current_medications = models.TextField(blank=True)
     allergies = models.TextField(blank=True)
     last_cancellation_time = models.DateTimeField(null=True, blank=True, help_text="Czas ostatniego anulowania wizyty")
