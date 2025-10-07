@@ -131,8 +131,8 @@ clinic_system/           # Main project directory
 - pesel: CharField (unique)
 - address: TextField
 - emergency_contact: CharField + phone
-- diabetes_type: CharField (type1/type2/gestational)
-- diagnosis_date: DateField
+- diabetes_type: CharField (healthy/type1/type2/gestational)
+- diagnosis_date: DateField (nullable for healthy patients)
 - current_medications: TextField
 - allergies: TextField
 - last_cancellation_time: DateTimeField  # FR-08
@@ -327,6 +327,9 @@ python manage.py check
 - FR-13: Spis pacjentów
 - FR-14: Podejrzenie karty pacjenta
 
+### Dodatkowe ulepszenia (✅)
+- **Opcja "Zdrowy"** - dodano możliwość rejestracji zdrowych osób (07.10.2025)
+
 ### Do implementacji ⏳
 - FR-15: Wprowadzanie wyników (W)
 
@@ -379,7 +382,7 @@ python manage.py check
 ---
 
 **Autor**: Marcin Kruk
-**Wersja**: v2.0 (Implementacja FR-06 do FR-14)
-**Data**: 14.09.2025
+**Wersja**: v2.1 (Implementacja FR-06 do FR-14 + opcja "Zdrowy")
+**Data**: 07.10.2025
 
-*System w pełni funkcjonalny dla pacjentów i lekarzy. 9/10 wymagań funkcjonalnych zaimplementowanych (90%). Pozostało tylko FR-15 (wprowadzanie wyników z oceną AI) do pełnego ukończenia projektu.*
+*System w pełni funkcjonalny dla pacjentów i lekarzy. 9/10 wymagań funkcjonalnych zaimplementowanych (90%) + dodatkowe ulepszenia. Dodano możliwość rejestracji zdrowych osób. Pozostało tylko FR-15 (wprowadzanie wyników z oceną AI) do pełnego ukończenia projektu.*
