@@ -32,7 +32,11 @@ def login_view(request):
             user.reset_failed_login()
 
             login(request, user)
-            if user.is_patient():
+
+            # Sprawdź czy użytkownik jest superadminem
+            if user.is_superuser:
+                return redirect('superadmin:dashboard')
+            elif user.is_patient():
                 return redirect('patients:dashboard')
             elif user.is_doctor():
                 return redirect('doctors:dashboard')

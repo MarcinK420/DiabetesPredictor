@@ -1,0 +1,276 @@
+{% extends 'superadmin/base.html' %}
+
+{% block title %}Szczegóły użytkownika - {{ selected_user.username }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-user"></i> Szczegóły użytkownika: {{ selected_user.username }}</h2>
+    <a href="{% url 'superadmin:user_list' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Powrót do listy
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-info-circle"></i> Informacje podstawowe</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <th>ID:</th>
+                        <td>{{ selected_user.id }}</td>
+                    </tr>
+                    <tr>
+                        <th>Nazwa użytkownika:</th>
+                        <td>{{ selected_user.username }}</td>
+                    </tr>
+                    <tr>
+                        <th>Imię i nazwisko:</th>
+                        <td>{{ selected_user.first_name }} {{ selected_user.last_name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Email:</th>
+                        <td>{{ selected_user.email }}</td>
+                    </tr>
+                    <tr>
+                        <th>Telefon:</th>
+                        <td>{{ selected_user.phone_number|default:"Nie podano" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Typ użytkownika:</th>
+                        <td>
+                            {% if selected_user.user_type == 'patient' %}
+                                <span class="badge bg-success">Pacjent</span>
+                            {% elif selected_user.user_type == 'doctor' %}
+                                <span class="badge bg-info">Lekarz</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Data rejestracji:</th>
+                        <td>{{ selected_user.date_joined|date:"Y-m-d H:i:s" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Ostatnie logowanie:</th>
+                        <td>{{ selected_user.last_login|date:"Y-m-d H:i:s"|default:"Nigdy" }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="fas fa-shield-alt"></i> Status i uprawnienia</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <th>Status konta:</th>
+                        <td>
+                            {% if selected_user.is_account_locked %}
+                                <span class="badge bg-danger">Zablokowane</span>
+                                <small class="text-muted d-block">
+                                    Do: {{ selected_user.account_locked_until|date:"Y-m-d H:i" }}
+                                </small>
+                            {% elif selected_user.is_active %}
+                                <span class="badge bg-success">Aktywne</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Nieaktywne</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Nieudane próby logowania:</th>
+                        <td>{{ selected_user.failed_login_attempts }}</td>
+                    </tr>
+                    <tr>
+                        <th>Ostatnia nieudana próba:</th>
+                        <td>{{ selected_user.last_failed_login|date:"Y-m-d H:i:s"|default:"Brak" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Superadmin:</th>
+                        <td>
+                            {% if selected_user.is_superuser %}
+                                <span class="badge bg-danger">TAK</span>
+                            {% else %}
+                                <span class="badge bg-secondary">NIE</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Staff:</th>
+                        <td>
+                            {% if selected_user.is_staff %}
+                                <span class="badge bg-info">TAK</span>
+                            {% else %}
+                                <span class="badge bg-secondary">NIE</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if patient_data %}
+<div class="card mb-4">
+    <div class="card-header bg-success text-white">
+        <h5 class="mb-0"><i class="fas fa-user-injured"></i> Dane pacjenta</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>PESEL:</strong> {{ patient_data.pesel }}</p>
+                <p><strong>Data urodzenia:</strong> {{ patient_data.date_of_birth }}</p>
+                <p><strong>Adres:</strong> {{ patient_data.address }}</p>
+                <p><strong>Typ cukrzycy:</strong> {{ patient_data.get_diabetes_type_display }}</p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>Data diagnozy:</strong> {{ patient_data.diagnosis_date|default:"Nie podano" }}</p>
+                <p><strong>Kontakt awaryjny:</strong> {{ patient_data.emergency_contact_name }} ({{ patient_data.emergency_contact_phone }})</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if doctor_data %}
+<div class="card mb-4">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0"><i class="fas fa-user-md"></i> Dane lekarza</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Numer licencji:</strong> {{ doctor_data.license_number }}</p>
+                <p><strong>Specjalizacja:</strong> {{ doctor_data.get_specialization_display }}</p>
+                <p><strong>Lata doświadczenia:</strong> {{ doctor_data.years_of_experience }}</p>
+                <p><strong>Opłata za konsultację:</strong> {{ doctor_data.consultation_fee }} PLN</p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>Godziny pracy:</strong> {{ doctor_data.working_hours_start }} - {{ doctor_data.working_hours_end }}</p>
+                <p><strong>Dni pracy:</strong> {{ doctor_data.get_working_days_display }}</p>
+                <p><strong>Adres gabinetu:</strong> {{ doctor_data.office_address }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-header bg-danger text-white">
+        <h5 class="mb-0"><i class="fas fa-cogs"></i> Akcje administracyjne</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <h6>Zarządzanie statusem konta</h6>
+                <form method="post" action="{% url 'superadmin:toggle_user_status' selected_user.id %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-{% if selected_user.is_active %}warning{% else %}success{% endif %} btn-sm mb-2">
+                        <i class="fas fa-{% if selected_user.is_active %}ban{% else %}check{% endif %}"></i>
+                        {% if selected_user.is_active %}Dezaktywuj{% else %}Aktywuj{% endif %} konto
+                    </button>
+                </form>
+
+                {% if selected_user.is_account_locked %}
+                <form method="post" action="{% url 'superadmin:unlock_user_account' selected_user.id %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success btn-sm mb-2">
+                        <i class="fas fa-unlock"></i> Odblokuj konto
+                    </button>
+                </form>
+                {% else %}
+                <form method="post" action="{% url 'superadmin:lock_user_account' selected_user.id %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-warning btn-sm mb-2"
+                            onclick="return confirm('Czy na pewno chcesz zablokować to konto na 24 godziny?')">
+                        <i class="fas fa-lock"></i> Zablokuj konto
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <h6>Zmiana roli</h6>
+                <form method="post" action="{% url 'superadmin:change_user_role' selected_user.id %}" class="d-inline-block">
+                    {% csrf_token %}
+                    <div class="input-group input-group-sm mb-2">
+                        <select name="new_role" class="form-select">
+                            <option value="patient" {% if selected_user.user_type == 'patient' %}selected{% endif %}>Pacjent</option>
+                            <option value="doctor" {% if selected_user.user_type == 'doctor' %}selected{% endif %}>Lekarz</option>
+                        </select>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-exchange-alt"></i> Zmień rolę
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <h6>Uprawnienia superadmina</h6>
+                <form method="post" action="{% url 'superadmin:toggle_superuser_status' selected_user.id %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-{% if selected_user.is_superuser %}warning{% else %}info{% endif %} btn-sm mb-2"
+                            onclick="return confirm('Czy na pewno chcesz zmienić uprawnienia superadmina dla tego użytkownika?')">
+                        <i class="fas fa-shield-alt"></i>
+                        {% if selected_user.is_superuser %}Odbierz{% else %}Nadaj{% endif %} uprawnienia superadmina
+                    </button>
+                </form>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <h6>Resetuj hasło</h6>
+                <button type="button" class="btn btn-info btn-sm mb-2" data-bs-toggle="modal" data-bs-target="#resetPasswordModal">
+                    <i class="fas fa-key"></i> Resetuj hasło
+                </button>
+            </div>
+
+            <div class="col-md-12">
+                <h6>Usuń użytkownika</h6>
+                <form method="post" action="{% url 'superadmin:delete_user' selected_user.id %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger btn-sm"
+                            onclick="return confirm('UWAGA: Czy na pewno chcesz usunąć tego użytkownika? Ta operacja jest nieodwracalna!')">
+                        <i class="fas fa-trash"></i> Usuń użytkownika
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal resetowania hasła -->
+<div class="modal fade" id="resetPasswordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Resetuj hasło użytkownika</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'superadmin:reset_user_password' selected_user.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="new_password" class="form-label">Nowe hasło</label>
+                        <input type="password" class="form-control" id="new_password" name="new_password" required>
+                    </div>
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Upewnij się, że nowe hasło jest bezpieczne i przekaż je użytkownikowi bezpiecznym kanałem.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                    <button type="submit" class="btn btn-primary">Resetuj hasło</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

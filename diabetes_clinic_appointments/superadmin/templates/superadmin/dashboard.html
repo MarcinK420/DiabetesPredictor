@@ -1,0 +1,67 @@
+{% extends 'superadmin/base.html' %}
+
+{% block title %}Dashboard - Panel Superadmina{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-tachometer-alt"></i> Dashboard</h2>
+</div>
+
+<div class="row">
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <h5 class="card-title text-muted">Wszyscy użytkownicy</h5>
+                <h2 class="mb-0">{{ total_users }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card" style="border-left-color: #28a745;">
+            <div class="card-body">
+                <h5 class="card-title text-muted">Pacjenci</h5>
+                <h2 class="mb-0">{{ total_patients }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card" style="border-left-color: #17a2b8;">
+            <div class="card-body">
+                <h5 class="card-title text-muted">Lekarze</h5>
+                <h2 class="mb-0">{{ total_doctors }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card" style="border-left-color: #dc3545;">
+            <div class="card-body">
+                <h5 class="card-title text-muted">Zablokowane konta</h5>
+                <h2 class="mb-0">{{ locked_accounts }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-tasks"></i> Szybkie akcje</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    <a href="{% url 'superadmin:user_list' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-users"></i> Zarządzaj użytkownikami
+                    </a>
+                    <a href="{% url 'superadmin:user_list' %}?status=locked" class="list-group-item list-group-item-action">
+                        <i class="fas fa-lock"></i> Zobacz zablokowane konta
+                    </a>
+                    <a href="{% url 'superadmin:user_list' %}?status=inactive" class="list-group-item list-group-item-action">
+                        <i class="fas fa-user-slash"></i> Zobacz nieaktywne konta
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
