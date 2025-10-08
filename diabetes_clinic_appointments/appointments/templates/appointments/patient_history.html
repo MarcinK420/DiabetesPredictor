@@ -51,16 +51,18 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        <a href="{% url 'appointments:detail' appointment.id %}" class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation();">Szczegóły</a>
-                                        <button class="btn btn-sm btn-outline-info" onclick="event.stopPropagation(); showAppointmentModal({{ appointment.id }}, '{{ appointment.appointment_date|date:"d.m.Y H:i" }}', 'Dr. {{ appointment.doctor.user.first_name }} {{ appointment.doctor.user.last_name }}', '{{ appointment.reason }}', '{{ appointment.get_status_display }}', '{{ appointment.status }}')">Podgląd</button>
-                                        {% if appointment.status == 'scheduled' and appointment.appointment_date > now %}
-                                            <a href="{% url 'appointments:edit_appointment' appointment.id %}" class="btn btn-sm btn-outline-warning" onclick="event.stopPropagation();">
-                                                <i class="fas fa-edit"></i> Edytuj
-                                            </a>
-                                            <a href="{% url 'appointments:cancel_appointment' appointment.id %}" class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation();">
-                                                <i class="fas fa-times"></i> Anuluj
-                                            </a>
-                                        {% endif %}
+                                        <div class="d-flex flex-wrap gap-2">
+                                            <a href="{% url 'appointments:detail' appointment.id %}" class="btn btn-outline-primary" onclick="event.stopPropagation();">Szczegóły</a>
+                                            <button class="btn btn-outline-info" onclick="event.stopPropagation(); showAppointmentModal({{ appointment.id }}, '{{ appointment.appointment_date|date:"d.m.Y H:i" }}', 'Dr. {{ appointment.doctor.user.first_name }} {{ appointment.doctor.user.last_name }}', '{{ appointment.reason }}', '{{ appointment.get_status_display }}', '{{ appointment.status }}')">Podgląd</button>
+                                            {% if appointment.status == 'scheduled' and appointment.appointment_date > now %}
+                                                <a href="{% url 'appointments:edit_appointment' appointment.id %}" class="btn btn-outline-warning" onclick="event.stopPropagation();">
+                                                    <i class="fas fa-edit"></i> Edytuj
+                                                </a>
+                                                <a href="{% url 'appointments:cancel_appointment' appointment.id %}" class="btn btn-outline-danger" onclick="event.stopPropagation();">
+                                                    <i class="fas fa-times"></i> Anuluj
+                                                </a>
+                                            {% endif %}
+                                        </div>
                                     </td>
                                 </tr>
                                 {% endfor %}

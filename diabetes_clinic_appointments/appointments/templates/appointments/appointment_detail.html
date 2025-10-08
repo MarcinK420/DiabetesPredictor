@@ -99,8 +99,12 @@
                         <h5>Akcje</h5>
                     </div>
                     <div class="card-body">
-                        <a href="#" class="btn btn-warning btn-sm w-100 mb-2">Edytuj wizytę</a>
-                        <a href="#" class="btn btn-danger btn-sm w-100">Anuluj wizytę</a>
+                        <a href="{% url 'appointments:edit_appointment' appointment.id %}" class="btn btn-warning w-100 mb-2">
+                            <i class="fas fa-edit"></i> Edytuj wizytę
+                        </a>
+                        <a href="{% url 'appointments:cancel_appointment' appointment.id %}" class="btn btn-danger w-100">
+                            <i class="fas fa-times"></i> Anuluj wizytę
+                        </a>
                     </div>
                 </div>
                 {% endif %}
