@@ -1,0 +1,27 @@
+[Unit]
+Description=Gunicorn daemon for Clinic System
+Requires=gunicorn.socket
+After=network.target
+
+[Service]
+Type=notify
+User=www-data
+Group=www-data
+RuntimeDirectory=gunicorn
+WorkingDirectory=/path/to/diabetes_clinic_appointments
+EnvironmentFile=/path/to/diabetes_clinic_appointments/.env
+ExecStart=/path/to/diabetes_clinic_appointments/venv/bin/gunicorn \
+          --workers 3 \
+          --bind unix:/run/gunicorn-clinic-system.sock \
+          --timeout 60 \
+          --access-logfile /var/log/gunicorn/access.log \
+          --error-logfile /var/log/gunicorn/error.log \
+          --log-level info \
+          clinic_system.wsgi:application
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=5
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

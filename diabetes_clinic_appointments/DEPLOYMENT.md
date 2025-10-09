@@ -87,7 +87,12 @@ DEFAULT_FROM_EMAIL=your-email@example.com
    - Lista domen oddzielonych przecinkami
    - Przykład: `ALLOWED_HOSTS=example.com,www.example.com,192.168.1.1`
 
-3. **Opcjonalnie: Użyj PostgreSQL:**
+3. **Skonfiguruj HTTPS:**
+   - Zobacz szczegółowy przewodnik: [HTTPS_SETUP.md](HTTPS_SETUP.md)
+   - Automatyczna konfiguracja: `sudo bash deploy/scripts/setup_https.sh`
+   - Lub manualna konfiguracja z Nginx/Apache
+
+4. **Opcjonalnie: Użyj PostgreSQL:**
    ```bash
    pip install psycopg2-binary
    ```
@@ -96,12 +101,12 @@ DEFAULT_FROM_EMAIL=your-email@example.com
    DATABASE_URL=postgresql://user:password@host:port/dbname
    ```
 
-4. **Zbierz pliki statyczne:**
+5. **Zbierz pliki statyczne:**
    ```bash
    python manage.py collectstatic --noinput
    ```
 
-5. **Uruchom migracje:**
+6. **Uruchom migracje:**
    ```bash
    python manage.py migrate
    ```
@@ -146,9 +151,28 @@ Podstawowe zależności:
 - **SECURE_SSL_REDIRECT**: Przekierowanie HTTP → HTTPS
 - **SESSION_COOKIE_SECURE**: Secure cookies dla sesji
 - **CSRF_COOKIE_SECURE**: Secure cookies dla CSRF
-- **SECURE_HSTS_SECONDS**: HTTP Strict Transport Security
+- **SECURE_HSTS_SECONDS**: HTTP Strict Transport Security (1 rok)
 - **SECURE_BROWSER_XSS_FILTER**: Ochrona XSS
 - **X_FRAME_OPTIONS**: Ochrona przed clickjacking
+- **SECURE_REFERRER_POLICY**: Kontrola informacji referrer
+- **SECURE_CROSS_ORIGIN_OPENER_POLICY**: Ochrona cross-origin
+- **SECURE_PROXY_SSL_HEADER**: Wsparcie dla reverse proxy (opcjonalne)
+
+### Konfiguracja HTTPS
+
+Szczegółowy przewodnik konfiguracji HTTPS znajduje się w [HTTPS_SETUP.md](HTTPS_SETUP.md).
+
+**Szybki start:**
+```bash
+sudo bash deploy/scripts/setup_https.sh
+```
+
+Skrypt automatycznie:
+- Instaluje Let's Encrypt certbot
+- Konfiguruje Nginx lub Apache
+- Uzyskuje darmowy certyfikat SSL
+- Ustawia automatyczne odnawianie
+- Konfiguruje Gunicorn systemd service
 
 ## Troubleshooting
 
@@ -171,9 +195,32 @@ Podstawowe zależności:
 | DATABASE_URL | - | Opcjonalne | URL do bazy PostgreSQL |
 | SECURE_SSL_REDIRECT | - | Opcjonalne (True) | Przekierowanie na HTTPS |
 | SECURE_HSTS_SECONDS | - | Opcjonalne (31536000) | HSTS timeout |
+| TRUST_PROXY_HEADERS | - | Opcjonalne (False) | Zaufaj X-Forwarded-* headers |
+| SECURE_REFERRER_POLICY | - | Opcjonalne (same-origin) | Polityka referrer |
+| SECURE_CROSS_ORIGIN_OPENER_POLICY | - | Opcjonalne (same-origin) | COOP policy |
 | EMAIL_HOST | - | Opcjonalne | Serwer SMTP |
 | EMAIL_PORT | - | Opcjonalne (587) | Port SMTP |
 | EMAIL_USE_TLS | - | Opcjonalne (True) | Użycie TLS |
 | EMAIL_HOST_USER | - | Opcjonalne | Login SMTP |
 | EMAIL_HOST_PASSWORD | - | Opcjonalne | Hasło SMTP |
 | DEFAULT_FROM_EMAIL | - | Opcjonalne | Domyślny nadawca |
+
+## Deployment Configurations
+
+Projekt zawiera gotowe konfiguracje dla popularnych deployment scenarios:
+
+```
+deploy/
+├── nginx/
+│   ├── clinic_system.conf    # Nginx + SSL config
+│   └── ssl-params.conf        # SSL parameters
+├── apache/
+│   └── clinic_system.conf     # Apache + SSL config
+├── systemd/
+│   ├── gunicorn.service       # Gunicorn systemd service
+│   └── gunicorn.socket        # Gunicorn socket
+└── scripts/
+    └── setup_https.sh         # Automatyczna konfiguracja HTTPS
+```
+
+Zobacz [HTTPS_SETUP.md](HTTPS_SETUP.md) dla szczegółowych instrukcji.

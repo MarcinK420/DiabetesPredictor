@@ -52,10 +52,23 @@ SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
 
-# HSTS settings
+# HSTS settings (HTTP Strict Transport Security)
 SECURE_HSTS_SECONDS = int(os.getenv('SECURE_HSTS_SECONDS', '31536000'))  # 1 year
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
+
+# Proxy/Load Balancer settings
+# If behind nginx/Apache reverse proxy, trust X-Forwarded-Proto header
+if os.getenv('TRUST_PROXY_HEADERS', 'False') == 'True':
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    USE_X_FORWARDED_HOST = True
+    USE_X_FORWARDED_PORT = True
+
+# Referrer Policy - controls how much referrer information is sent
+SECURE_REFERRER_POLICY = os.getenv('SECURE_REFERRER_POLICY', 'same-origin')
+
+# Cross-Origin Opener Policy - protects against cross-origin attacks
+SECURE_CROSS_ORIGIN_OPENER_POLICY = os.getenv('SECURE_CROSS_ORIGIN_OPENER_POLICY', 'same-origin')
 
 # Ensure logs directory exists
 logs_dir = BASE_DIR / 'logs'

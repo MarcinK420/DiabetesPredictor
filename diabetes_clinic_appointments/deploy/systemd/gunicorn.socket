@@ -1,0 +1,11 @@
+[Unit]
+Description=Gunicorn socket for Clinic System
+
+[Socket]
+ListenStream=/run/gunicorn-clinic-system.sock
+SocketUser=www-data
+SocketGroup=www-data
+SocketMode=0660
+
+[Install]
+WantedBy=sockets.target
