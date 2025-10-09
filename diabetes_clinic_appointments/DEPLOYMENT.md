@@ -198,6 +198,17 @@ Skrypt automatycznie:
 | TRUST_PROXY_HEADERS | - | Opcjonalne (False) | Zaufaj X-Forwarded-* headers |
 | SECURE_REFERRER_POLICY | - | Opcjonalne (same-origin) | Polityka referrer |
 | SECURE_CROSS_ORIGIN_OPENER_POLICY | - | Opcjonalne (same-origin) | COOP policy |
+| CSRF_TRUSTED_ORIGINS | - | Opcjonalne | Lista zaufanych origins dla CSRF |
+| CSRF_COOKIE_HTTPONLY | - | Opcjonalne (False) | HttpOnly flag dla CSRF cookie |
+| CSRF_COOKIE_SAMESITE | - | Opcjonalne (Lax) | SameSite policy dla CSRF |
+| CSRF_COOKIE_AGE | - | Opcjonalne (31449600) | Czas życia CSRF cookie |
+| CORS_ALLOWED_ORIGINS | - | Opcjonalne | Lista dozwolonych CORS origins |
+| CORS_ALLOW_CREDENTIALS | - | Opcjonalne (True) | Allow credentials w CORS |
+| CORS_ALLOWED_METHODS | - | Opcjonalne | Dozwolone HTTP metody dla CORS |
+| CORS_ALLOWED_HEADERS | - | Opcjonalne | Dozwolone headers dla CORS |
+| CORS_EXPOSE_HEADERS | - | Opcjonalne | Exposed headers dla CORS |
+| ENABLE_CORS_IN_DEV | False | - | Włącz CORS w development |
+| CORS_ALLOW_ALL_ORIGINS_DEV | True | - | Allow all origins w dev |
 | EMAIL_HOST | - | Opcjonalne | Serwer SMTP |
 | EMAIL_PORT | - | Opcjonalne (587) | Port SMTP |
 | EMAIL_USE_TLS | - | Opcjonalne (True) | Użycie TLS |
@@ -224,3 +235,110 @@ deploy/
 ```
 
 Zobacz [HTTPS_SETUP.md](HTTPS_SETUP.md) dla szczegółowych instrukcji.
+
+## CSRF i CORS
+
+### CSRF (Cross-Site Request Forgery) Protection
+
+Django ma wbudowaną ochronę CSRF. Projekt konfiguruje dodatkowe zabezpieczenia:
+
+**Production:**
+- `CSRF_COOKIE_SECURE=True` - Cookie tylko przez HTTPS
+- `CSRF_TRUSTED_ORIGINS` - Lista zaufanych domen (auto-generowana z ALLOWED_HOSTS)
+- `CSRF_COOKIE_SAMESITE=Lax` - Ochrona przed CSRF attacks
+
+**Development:**
+- `CSRF_COOKIE_SECURE=False` - Zezwól na HTTP
+- Predefiniowana lista trusted origins (localhost:8000, localhost:3000)
+
+**Konfiguracja CSRF_TRUSTED_ORIGINS:**
+```env
+# Dla produkcji - lista domen z https://
+CSRF_TRUSTED_ORIGINS=https://example.com,https://www.example.com,https://api.example.com
+```
+
+### CORS (Cross-Origin Resource Sharing)
+
+CORS jest wymagane **tylko** jeśli masz:
+- Oddzielny frontend (React, Vue, Angular)
+- Aplikację mobilną
+- Zewnętrzne API konsumenty
+
+**Kiedy NIE potrzebujesz CORS:**
+- Monolityczna aplikacja Django (templates + views)
+- Frontend renderowany przez Django
+
+#### Scenariusz 1: Aplikacja monolityczna (domyślnie)
+
+CORS jest **wyłączone**. Nie musisz nic konfigurować.
+
+#### Scenariusz 2: Django API + React/Vue frontend
+
+**Production (.env):**
+```env
+# Włącz CORS dla konkretnych domen
+CORS_ALLOWED_ORIGINS=https://frontend.example.com,https://app.example.com
+CORS_ALLOW_CREDENTIALS=True
+```
+
+**Development (.env):**
+```env
+# Włącz CORS w development
+ENABLE_CORS_IN_DEV=True
+CORS_ALLOW_ALL_ORIGINS_DEV=True  # Lub False dla konkretnych origins
+```
+
+#### Scenariusz 3: Public API (bez credentials)
+
+```env
+CORS_ALLOWED_ORIGINS=*  # Lub konkretne domeny
+CORS_ALLOW_CREDENTIALS=False  # Brak cookies/auth
+CORS_ALLOWED_METHODS=GET,POST,OPTIONS
+```
+
+#### Scenariusz 4: Mobile App
+
+```env
+# Mobile apps często używają localhost w development
+CORS_ALLOWED_ORIGINS=http://localhost:8080,http://127.0.0.1:8080,capacitor://localhost
+CORS_ALLOW_CREDENTIALS=True
+```
+
+### Testowanie CSRF i CORS
+
+**Test CSRF:**
+```bash
+# Powinno zwrócić błąd CSRF
+curl -X POST https://yourdomain.com/api/endpoint/
+
+# Poprawne użycie (z CSRF token)
+curl -X POST https://yourdomain.com/api/endpoint/ \
+  -H "X-CSRFToken: your-token" \
+  -H "Cookie: csrftoken=your-token"
+```
+
+**Test CORS:**
+```bash
+# Sprawdź CORS headers
+curl -I -X OPTIONS https://yourdomain.com/api/endpoint/ \
+  -H "Origin: https://frontend.example.com"
+
+# Powinno zwrócić:
+# Access-Control-Allow-Origin: https://frontend.example.com
+# Access-Control-Allow-Credentials: true
+```
+
+### Troubleshooting CSRF/CORS
+
+**Problem: "CSRF verification failed"**
+- Sprawdź czy `CSRF_TRUSTED_ORIGINS` zawiera Twoją domenę z https://
+- Sprawdź czy frontend wysyła CSRF token w header `X-CSRFToken`
+
+**Problem: "CORS policy: No 'Access-Control-Allow-Origin'"**
+- Sprawdź czy `CORS_ALLOWED_ORIGINS` zawiera origin frontendu
+- Sprawdź czy `corsheaders` jest w INSTALLED_APPS
+- Sprawdź czy `CorsMiddleware` jest w MIDDLEWARE (przed CommonMiddleware)
+
+**Problem: "CORS credentials mode mismatch"**
+- Ustaw `CORS_ALLOW_CREDENTIALS=True` jeśli używasz cookies/auth
+- Frontend musi wysyłać `credentials: 'include'` w fetch/axios
