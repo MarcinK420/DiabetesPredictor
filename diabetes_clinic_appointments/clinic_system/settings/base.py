@@ -15,7 +15,8 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+# Note: BASE_DIR now points to project root (parent.parent.parent since we're in settings/)
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # Load environment variables from .env file
 load_dotenv(BASE_DIR / '.env')
@@ -27,10 +28,7 @@ load_dotenv(BASE_DIR / '.env')
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-fallback-key-change-this-in-production')
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'True') == 'True'
-
-ALLOWED_HOSTS = []
+# DEBUG and ALLOWED_HOSTS should be set in environment-specific settings files
 
 
 # Application definition
@@ -79,15 +77,7 @@ TEMPLATES = [
 WSGI_APPLICATION = 'clinic_system.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
+# Database configuration should be set in environment-specific settings files
 
 
 # Password validation
