@@ -2,11 +2,17 @@ from django.db import models
 from django.conf import settings
 from django.utils import timezone
 from datetime import timedelta
+from utilities.validators import PESELValidator
 
 class Patient(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='patient_profile')
     date_of_birth = models.DateField()
-    pesel = models.CharField(max_length=11, unique=True)
+    pesel = models.CharField(
+        max_length=11,
+        unique=True,
+        validators=[PESELValidator()],
+        help_text='Numer PESEL (11 cyfr z poprawną sumą kontrolną)'
+    )
     address = models.TextField()
     emergency_contact_name = models.CharField(max_length=100)
     emergency_contact_phone = models.CharField(max_length=15)

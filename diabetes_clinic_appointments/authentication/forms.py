@@ -1,8 +1,10 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
+from django.core.exceptions import ValidationError
 from .models import User
 from patients.models import Patient
 from doctors.models import Doctor
+from utilities.validators import validate_pesel_checksum, validate_pesel_birth_date_consistency
 
 class PatientRegistrationForm(UserCreationForm):
     def __init__(self, *args, **kwargs):
@@ -33,13 +35,34 @@ class PatientRegistrationForm(UserCreationForm):
         model = User
         fields = ('username', 'first_name', 'last_name', 'email', 'phone_number', 'password1', 'password2')
 
+    def clean_pesel(self):
+        """Validate PESEL checksum"""
+        pesel = self.cleaned_data.get('pesel')
+
+        if pesel:
+            try:
+                validate_pesel_checksum(pesel)
+            except ValidationError as e:
+                raise forms.ValidationError(str(e))
+
+        return pesel
+
     def clean(self):
         cleaned_data = super().clean()
         diabetes_type = cleaned_data.get('diabetes_type')
         diagnosis_date = cleaned_data.get('diagnosis_date')
+        pesel = cleaned_data.get('pesel')
+        date_of_birth = cleaned_data.get('date_of_birth')
 
         if diabetes_type and diabetes_type != 'healthy' and not diagnosis_date:
             raise forms.ValidationError('Data diagnozy jest wymagana dla osób z cukrzycą.')
+
+        # Validate PESEL consistency with birth date
+        if pesel and date_of_birth:
+            try:
+                validate_pesel_birth_date_consistency(pesel, date_of_birth)
+            except ValidationError as e:
+                raise forms.ValidationError(str(e))
 
         return cleaned_data
 
