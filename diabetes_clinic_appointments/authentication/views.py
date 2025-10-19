@@ -65,12 +65,19 @@ def register_patient(request):
     if request.method == 'POST':
         form = PatientRegistrationForm(request.POST)
         if form.is_valid():
-            user = form.save()
-            messages.success(request, 'Konto pacjenta zostało utworzone pomyślnie!')
-            return redirect('authentication:login')
+            try:
+                user = form.save()
+                messages.success(request, 'Konto pacjenta zostało utworzone pomyślnie!')
+                return redirect('authentication:login')
+            except Exception as e:
+                # Handle database errors (like duplicate PESEL)
+                if 'UNIQUE constraint failed' in str(e) or 'duplicate' in str(e).lower():
+                    form.add_error('pesel', 'Pacjent z tym numerem PESEL już istnieje w systemie.')
+                else:
+                    messages.error(request, 'Wystąpił błąd podczas tworzenia konta. Spróbuj ponownie.')
     else:
         form = PatientRegistrationForm()
-    
+
     return render(request, 'authentication/register_patient.html', {'form': form})
 
 
