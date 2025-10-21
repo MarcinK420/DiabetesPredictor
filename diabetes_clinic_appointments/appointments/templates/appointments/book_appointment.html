@@ -151,16 +151,47 @@
     </div>
 </div>
 
+{% endblock %}
+
+{% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Set minimum date/time to current date/time
-    const appointmentDateInput = document.querySelector('input[type="datetime-local"]');
+    // Initialize Flatpickr on appointment date input
+    const appointmentDateInput = document.querySelector('.flatpickr-input');
+
     if (appointmentDateInput) {
-        const now = new Date();
-        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-        appointmentDateInput.min = now.toISOString().slice(0, 16);
+        flatpickr(appointmentDateInput, {
+            enableTime: true,
+            dateFormat: "Y-m-d H:i",
+            time_24hr: true,
+            locale: "pl",
+            minDate: "today",
+            maxDate: new Date().fp_incr(180), // 6 months from now
+            minuteIncrement: 15,
+            disable: [
+                function(date) {
+                    // Disable weekends (Saturday = 6, Sunday = 0)
+                    return (date.getDay() === 0 || date.getDay() === 6);
+                }
+            ],
+            minTime: "08:00",
+            maxTime: "17:00",
+            altInput: true,
+            altFormat: "j F Y, H:i",
+            onChange: function(selectedDates, dateStr, instance) {
+                // Validate time is within working hours
+                if (selectedDates.length > 0) {
+                    const selectedDate = selectedDates[0];
+                    const hours = selectedDate.getHours();
+
+                    if (hours < 8 || hours >= 17) {
+                        instance.clear();
+                        alert('Wizyty można umawiać tylko w godzinach 8:00-17:00.');
+                    }
+                }
+            }
+        });
     }
 });
 </script>
-
 {% endblock %}

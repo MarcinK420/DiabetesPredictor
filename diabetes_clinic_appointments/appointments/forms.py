@@ -6,6 +6,20 @@ from .models import Appointment
 from doctors.models import Doctor
 
 
+class DateTimePickerWidget(forms.DateTimeInput):
+    """Custom widget dla wizualnego kalendarza z Flatpickr"""
+
+    def __init__(self, attrs=None):
+        default_attrs = {
+            'class': 'form-control flatpickr-input',
+            'placeholder': 'Wybierz datę i godzinę...',
+            'readonly': 'readonly',
+        }
+        if attrs:
+            default_attrs.update(attrs)
+        super().__init__(attrs=default_attrs, format='%Y-%m-%d %H:%M')
+
+
 class AppointmentBookingForm(forms.ModelForm):
     doctor = forms.ModelChoiceField(
         queryset=Doctor.objects.filter(is_accepting_patients=True),
@@ -15,11 +29,9 @@ class AppointmentBookingForm(forms.ModelForm):
     )
 
     appointment_date = forms.DateTimeField(
-        widget=forms.DateTimeInput(attrs={
-            'type': 'datetime-local',
-            'class': 'form-control'
-        }),
-        label='Data i godzina wizyty'
+        widget=DateTimePickerWidget(),
+        label='Data i godzina wizyty',
+        input_formats=['%Y-%m-%d %H:%M']
     )
 
     reason = forms.CharField(
@@ -94,11 +106,9 @@ class AppointmentEditForm(forms.ModelForm):
     )
 
     appointment_date = forms.DateTimeField(
-        widget=forms.DateTimeInput(attrs={
-            'type': 'datetime-local',
-            'class': 'form-control'
-        }),
-        label='Data i godzina wizyty'
+        widget=DateTimePickerWidget(),
+        label='Data i godzina wizyty',
+        input_formats=['%Y-%m-%d %H:%M']
     )
 
     reason = forms.CharField(
