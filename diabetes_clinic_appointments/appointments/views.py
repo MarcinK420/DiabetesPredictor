@@ -3,8 +3,11 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.utils import timezone
+from django.http import JsonResponse
+from datetime import datetime, timedelta, time
 from .models import Appointment
 from .forms import AppointmentBookingForm, AppointmentEditForm
+from doctors.models import Doctor
 
 @login_required
 def patient_appointment_history(request):
@@ -210,3 +213,83 @@ def cancel_appointment(request, appointment_id):
         'title': 'Anuluj wizytę',
     }
     return render(request, 'appointments/cancel_appointment.html', context)
+
+
+@login_required
+def get_available_time_slots(request):
+    """
+    API endpoint that returns available time slots for a specific doctor on a specific date.
+    Returns JSON with available hours.
+    """
+    doctor_id = request.GET.get('doctor_id')
+    date_str = request.GET.get('date')  # Format: YYYY-MM-DD
+    appointment_id = request.GET.get('appointment_id')  # Optional: for editing
+
+    if not doctor_id or not date_str:
+        return JsonResponse({'error': 'Missing required parameters'}, status=400)
+
+    try:
+        doctor = Doctor.objects.get(id=doctor_id)
+        selected_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+    except (Doctor.DoesNotExist, ValueError):
+        return JsonResponse({'error': 'Invalid doctor or date'}, status=400)
+
+    # Check if the date is a weekend
+    if selected_date.weekday() >= 5:  # Saturday = 5, Sunday = 6
+        return JsonResponse({'available_slots': [], 'message': 'Weekends are not available'})
+
+    # Generate all possible time slots (8:00 - 17:00, every 15 minutes)
+    all_slots = []
+    current_time = time(8, 0)  # Start at 8:00
+    end_time = time(17, 0)     # End at 17:00
+
+    while current_time < end_time:
+        all_slots.append(current_time.strftime('%H:%M'))
+        # Add 15 minutes
+        dt = datetime.combine(selected_date, current_time)
+        dt += timedelta(minutes=15)
+        current_time = dt.time()
+
+    # Get all scheduled appointments for this doctor on this date
+    start_datetime = datetime.combine(selected_date, time(0, 0))
+    end_datetime = datetime.combine(selected_date, time(23, 59))
+
+    # Make datetimes timezone-aware
+    start_datetime = timezone.make_aware(start_datetime)
+    end_datetime = timezone.make_aware(end_datetime)
+
+    existing_appointments = Appointment.objects.filter(
+        doctor=doctor,
+        appointment_date__range=(start_datetime, end_datetime),
+        status='scheduled'
+    )
+
+    # Exclude current appointment if editing
+    if appointment_id:
+        existing_appointments = existing_appointments.exclude(id=appointment_id)
+
+    # Mark occupied slots (including buffer time)
+    occupied_slots = set()
+    for appointment in existing_appointments:
+        appointment_time = appointment.appointment_date.astimezone(timezone.get_current_timezone())
+
+        # Block the exact time slot and 45 minutes after (30 min appointment + 15 min buffer)
+        current = appointment_time
+        for _ in range(4):  # 4 slots of 15 minutes = 60 minutes total
+            occupied_slots.add(current.time().strftime('%H:%M'))
+            current += timedelta(minutes=15)
+
+        # Also block 15 minutes before
+        before = appointment_time - timedelta(minutes=15)
+        if before.time() >= time(8, 0):
+            occupied_slots.add(before.time().strftime('%H:%M'))
+
+    # Filter available slots
+    available_slots = [slot for slot in all_slots if slot not in occupied_slots]
+
+    return JsonResponse({
+        'available_slots': available_slots,
+        'occupied_slots': list(occupied_slots),
+        'date': date_str,
+        'doctor_name': f"Dr. {doctor.user.first_name} {doctor.user.last_name}"
+    })

@@ -71,6 +71,18 @@
                             <small class="form-text text-muted">
                                 Wybierz datę i godzinę wizyty. Dostępne godziny: 8:00-17:00, poniedziałek-piątek.
                             </small>
+
+                            <!-- Available slots display -->
+                            <div id="available-slots-info" class="mt-3" style="display: none;">
+                                <div class="alert alert-info">
+                                    <strong><i class="fas fa-info-circle"></i> Dostępne godziny w tym dniu:</strong>
+                                    <div id="slots-loading" style="display: none;">
+                                        <span class="spinner-border spinner-border-sm" role="status"></span>
+                                        Ładowanie dostępnych godzin...
+                                    </div>
+                                    <div id="slots-list" class="mt-2"></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -158,9 +170,15 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize Flatpickr on appointment date input
     const appointmentDateInput = document.querySelector('.flatpickr-input');
+    const doctorSelect = document.getElementById('{{ form.doctor.id_for_label }}');
+    const availableSlotsInfo = document.getElementById('available-slots-info');
+    const slotsLoading = document.getElementById('slots-loading');
+    const slotsList = document.getElementById('slots-list');
+
+    let flatpickrInstance = null;
 
     if (appointmentDateInput) {
-        flatpickr(appointmentDateInput, {
+        flatpickrInstance = flatpickr(appointmentDateInput, {
             enableTime: true,
             dateFormat: "Y-m-d H:i",
             time_24hr: true,
@@ -187,10 +205,71 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (hours < 8 || hours >= 17) {
                         instance.clear();
                         alert('Wizyty można umawiać tylko w godzinach 8:00-17:00.');
+                        return;
                     }
+
+                    // Load available slots when date changes
+                    loadAvailableSlots(selectedDate);
                 }
             }
         });
+    }
+
+    // Load available slots when doctor changes
+    if (doctorSelect) {
+        doctorSelect.addEventListener('change', function() {
+            if (flatpickrInstance && flatpickrInstance.selectedDates.length > 0) {
+                loadAvailableSlots(flatpickrInstance.selectedDates[0]);
+            }
+        });
+    }
+
+    function loadAvailableSlots(selectedDate) {
+        const doctorId = doctorSelect ? doctorSelect.value : null;
+
+        if (!doctorId) {
+            availableSlotsInfo.style.display = 'none';
+            return;
+        }
+
+        // Format date as YYYY-MM-DD
+        const dateStr = selectedDate.getFullYear() + '-' +
+                        String(selectedDate.getMonth() + 1).padStart(2, '0') + '-' +
+                        String(selectedDate.getDate()).padStart(2, '0');
+
+        // Show loading
+        availableSlotsInfo.style.display = 'block';
+        slotsLoading.style.display = 'block';
+        slotsList.innerHTML = '';
+
+        // Fetch available slots
+        fetch(`/appointments/api/available-slots/?doctor_id=${doctorId}&date=${dateStr}`)
+            .then(response => response.json())
+            .then(data => {
+                slotsLoading.style.display = 'none';
+
+                if (data.error) {
+                    slotsList.innerHTML = `<div class="text-danger">${data.error}</div>`;
+                    return;
+                }
+
+                if (data.available_slots.length === 0) {
+                    slotsList.innerHTML = '<div class="text-warning">Brak dostępnych godzin w tym dniu.</div>';
+                } else {
+                    let slotsHTML = '<div class="d-flex flex-wrap gap-2">';
+                    data.available_slots.forEach(slot => {
+                        slotsHTML += `<span class="badge bg-success">${slot}</span>`;
+                    });
+                    slotsHTML += '</div>';
+                    slotsHTML += `<small class="text-muted d-block mt-2">Liczba dostępnych terminów: ${data.available_slots.length}</small>`;
+                    slotsList.innerHTML = slotsHTML;
+                }
+            })
+            .catch(error => {
+                slotsLoading.style.display = 'none';
+                slotsList.innerHTML = '<div class="text-danger">Błąd podczas ładowania dostępnych godzin.</div>';
+                console.error('Error:', error);
+            });
     }
 });
 </script>
