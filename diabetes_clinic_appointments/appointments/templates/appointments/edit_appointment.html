@@ -181,17 +181,24 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Initializing appointment edit form...');
+
     // Initialize Flatpickr on appointment date input
     const appointmentDateInput = document.querySelector('.flatpickr-input');
-    const doctorSelect = document.getElementById('{{ form.doctor.id_for_label }}');
+    const doctorSelect = document.getElementById('id_doctor');
     const availableSlotsInfo = document.getElementById('available-slots-info');
     const slotsLoading = document.getElementById('slots-loading');
     const slotsList = document.getElementById('slots-list');
     const appointmentId = {{ appointment.id }};
 
+    console.log('Doctor select found:', doctorSelect);
+    console.log('Available slots info found:', availableSlotsInfo);
+    console.log('Appointment ID:', appointmentId);
+
     let flatpickrInstance = null;
 
     if (appointmentDateInput) {
+        console.log('Initializing Flatpickr...');
         flatpickrInstance = flatpickr(appointmentDateInput, {
             enableTime: true,
             dateFormat: "Y-m-d H:i",
@@ -211,6 +218,8 @@ document.addEventListener('DOMContentLoaded', function() {
             altInput: true,
             altFormat: "j F Y, H:i",
             onChange: function(selectedDates, dateStr, instance) {
+                console.log('Date changed:', selectedDates);
+
                 // Validate time is within working hours
                 if (selectedDates.length > 0) {
                     const selectedDate = selectedDates[0];
@@ -227,11 +236,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         });
+    } else {
+        console.error('Flatpickr input not found!');
     }
 
     // Load available slots when doctor changes
     if (doctorSelect) {
         doctorSelect.addEventListener('change', function() {
+            console.log('Doctor changed to:', this.value);
             if (flatpickrInstance && flatpickrInstance.selectedDates.length > 0) {
                 loadAvailableSlots(flatpickrInstance.selectedDates[0]);
             }
@@ -239,9 +251,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function loadAvailableSlots(selectedDate) {
+        console.log('Loading available slots...');
         const doctorId = doctorSelect ? doctorSelect.value : null;
 
+        console.log('Doctor ID:', doctorId);
+        console.log('Selected date:', selectedDate);
+
         if (!doctorId) {
+            console.log('No doctor selected, hiding slots');
             availableSlotsInfo.style.display = 'none';
             return;
         }
@@ -251,15 +268,24 @@ document.addEventListener('DOMContentLoaded', function() {
                         String(selectedDate.getMonth() + 1).padStart(2, '0') + '-' +
                         String(selectedDate.getDate()).padStart(2, '0');
 
+        console.log('Formatted date:', dateStr);
+
         // Show loading
         availableSlotsInfo.style.display = 'block';
         slotsLoading.style.display = 'block';
         slotsList.innerHTML = '';
 
+        const url = `/appointments/api/available-slots/?doctor_id=${doctorId}&date=${dateStr}&appointment_id=${appointmentId}`;
+        console.log('Fetching from URL:', url);
+
         // Fetch available slots (include appointment_id to exclude current appointment)
-        fetch(`/appointments/api/available-slots/?doctor_id=${doctorId}&date=${dateStr}&appointment_id=${appointmentId}`)
-            .then(response => response.json())
+        fetch(url)
+            .then(response => {
+                console.log('Response status:', response.status);
+                return response.json();
+            })
             .then(data => {
+                console.log('Received data:', data);
                 slotsLoading.style.display = 'none';
 
                 if (data.error) {
@@ -280,9 +306,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             })
             .catch(error => {
+                console.error('Fetch error:', error);
                 slotsLoading.style.display = 'none';
                 slotsList.innerHTML = '<div class="text-danger">Błąd podczas ładowania dostępnych godzin.</div>';
-                console.error('Error:', error);
             });
     }
 });
