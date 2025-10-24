@@ -248,6 +248,24 @@ class PESELValidator:
             self.code == other.code
         )
 
+    def deconstruct(self):
+        """
+        Return a 3-tuple of class import path, positional arguments,
+        and keyword arguments for Django migrations.
+        """
+        path = 'utilities.validators.PESELValidator'
+        args = []
+        kwargs = {}
+
+        # Only include non-default values
+        default_message = _('Podaj prawidłowy numer PESEL.')
+        if self.message != default_message:
+            kwargs['message'] = self.message
+        if self.code != 'invalid_pesel':
+            kwargs['code'] = self.code
+
+        return path, args, kwargs
+
 
 def is_valid_pesel(pesel):
     """

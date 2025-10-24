@@ -87,6 +87,18 @@
                             <small class="form-text text-muted">
                                 Nowa data i godzina wizyty. Dostępne godziny: 8:00-17:00, poniedziałek-piątek.
                             </small>
+
+                            <!-- Available slots display -->
+                            <div id="available-slots-info" class="mt-3" style="display: none;">
+                                <div class="alert alert-info">
+                                    <strong><i class="fas fa-info-circle"></i> Dostępne godziny w tym dniu:</strong>
+                                    <div id="slots-loading" style="display: none;">
+                                        <span class="spinner-border spinner-border-sm" role="status"></span>
+                                        Ładowanie dostępnych godzin...
+                                    </div>
+                                    <div id="slots-list" class="mt-2"></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -164,16 +176,169 @@
     </div>
 </div>
 
+{% endblock %}
+
+{% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Set minimum date/time to current date/time
-    const appointmentDateInput = document.querySelector('input[type="datetime-local"]');
+    console.log('Initializing appointment edit form...');
+
+    // Initialize Flatpickr on appointment date input
+    const appointmentDateInput = document.querySelector('.flatpickr-input');
+    const doctorSelect = document.getElementById('id_doctor');
+    const availableSlotsInfo = document.getElementById('available-slots-info');
+    const slotsLoading = document.getElementById('slots-loading');
+    const slotsList = document.getElementById('slots-list');
+    const appointmentId = {{ appointment.id }};
+
+    console.log('Doctor select found:', doctorSelect);
+    console.log('Available slots info found:', availableSlotsInfo);
+    console.log('Appointment ID:', appointmentId);
+
+    let flatpickrInstance = null;
+
     if (appointmentDateInput) {
-        const now = new Date();
-        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-        appointmentDateInput.min = now.toISOString().slice(0, 16);
+        console.log('Initializing Flatpickr...');
+        flatpickrInstance = flatpickr(appointmentDateInput, {
+            enableTime: true,
+            dateFormat: "Y-m-d H:i",
+            time_24hr: true,
+            locale: "pl",
+            minDate: "today",
+            maxDate: new Date().fp_incr(180), // 6 months from now
+            minuteIncrement: 15,
+            disable: [
+                function(date) {
+                    // Disable weekends (Saturday = 6, Sunday = 0)
+                    return (date.getDay() === 0 || date.getDay() === 6);
+                }
+            ],
+            minTime: "08:00",
+            maxTime: "17:00",
+            altInput: true,
+            altFormat: "j F Y, H:i",
+            onChange: function(selectedDates, dateStr, instance) {
+                console.log('Date changed:', selectedDates);
+
+                // Validate time is within working hours
+                if (selectedDates.length > 0) {
+                    const selectedDate = selectedDates[0];
+                    const hours = selectedDate.getHours();
+
+                    if (hours < 8 || hours >= 17) {
+                        instance.clear();
+                        alert('Wizyty można umawiać tylko w godzinach 8:00-17:00.');
+                        return;
+                    }
+
+                    // Load available slots when date changes
+                    loadAvailableSlots(selectedDate);
+                }
+            }
+        });
+    } else {
+        console.error('Flatpickr input not found!');
+    }
+
+    // Load available slots when doctor changes
+    if (doctorSelect) {
+        doctorSelect.addEventListener('change', function() {
+            console.log('Doctor changed to:', this.value);
+            if (flatpickrInstance && flatpickrInstance.selectedDates.length > 0) {
+                loadAvailableSlots(flatpickrInstance.selectedDates[0]);
+            }
+        });
+    }
+
+    function loadAvailableSlots(selectedDate) {
+        console.log('Loading available slots...');
+        const doctorId = doctorSelect ? doctorSelect.value : null;
+
+        console.log('Doctor ID:', doctorId);
+        console.log('Selected date:', selectedDate);
+
+        if (!doctorId) {
+            console.log('No doctor selected, hiding slots');
+            availableSlotsInfo.style.display = 'none';
+            return;
+        }
+
+        // Format date as YYYY-MM-DD
+        const dateStr = selectedDate.getFullYear() + '-' +
+                        String(selectedDate.getMonth() + 1).padStart(2, '0') + '-' +
+                        String(selectedDate.getDate()).padStart(2, '0');
+
+        console.log('Formatted date:', dateStr);
+
+        // Show loading
+        availableSlotsInfo.style.display = 'block';
+        slotsLoading.style.display = 'block';
+        slotsList.innerHTML = '';
+
+        const url = `/appointments/api/available-slots/?doctor_id=${doctorId}&date=${dateStr}&appointment_id=${appointmentId}`;
+        console.log('Fetching from URL:', url);
+
+        // Fetch available slots (include appointment_id to exclude current appointment)
+        fetch(url)
+            .then(response => {
+                console.log('Response status:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Received data:', data);
+                slotsLoading.style.display = 'none';
+
+                if (data.error) {
+                    slotsList.innerHTML = `<div class="text-danger">${data.error}</div>`;
+                    return;
+                }
+
+                if (data.available_slots.length === 0) {
+                    slotsList.innerHTML = '<div class="text-warning">Brak dostępnych godzin w tym dniu.</div>';
+                } else {
+                    let slotsHTML = '';
+
+                    // Show suggested slots first if any
+                    if (data.suggested_slots && data.suggested_slots.length > 0) {
+                        slotsHTML += '<div class="mb-3">';
+                        slotsHTML += '<strong class="text-primary"><i class="fas fa-star"></i> Rekomendowane dla Ciebie (na podstawie Twojej historii):</strong>';
+                        slotsHTML += '<div class="d-flex flex-wrap gap-2 mt-2">';
+                        data.suggested_slots.forEach(slot => {
+                            slotsHTML += `<span class="badge bg-warning text-dark"><i class="fas fa-star"></i> ${slot}</span>`;
+                        });
+                        slotsHTML += '</div>';
+                        slotsHTML += '</div>';
+                    }
+
+                    // Show all available slots
+                    slotsHTML += '<div>';
+                    slotsHTML += '<strong>Wszystkie dostępne godziny:</strong>';
+                    slotsHTML += '<div class="d-flex flex-wrap gap-2 mt-2">';
+                    data.available_slots.forEach(slot => {
+                        const isSuggested = data.suggested_slots && data.suggested_slots.includes(slot);
+                        if (isSuggested) {
+                            slotsHTML += `<span class="badge bg-warning text-dark"><i class="fas fa-star"></i> ${slot}</span>`;
+                        } else {
+                            slotsHTML += `<span class="badge bg-success">${slot}</span>`;
+                        }
+                    });
+                    slotsHTML += '</div>';
+                    slotsHTML += `<small class="text-muted d-block mt-2">Liczba dostępnych terminów: ${data.available_slots.length}</small>`;
+
+                    if (data.suggested_slots && data.suggested_slots.length > 0) {
+                        slotsHTML += `<small class="text-muted d-block"><i class="fas fa-info-circle"></i> Sugerowane terminy są oznaczone gwiazdką</small>`;
+                    }
+                    slotsHTML += '</div>';
+
+                    slotsList.innerHTML = slotsHTML;
+                }
+            })
+            .catch(error => {
+                console.error('Fetch error:', error);
+                slotsLoading.style.display = 'none';
+                slotsList.innerHTML = '<div class="text-danger">Błąd podczas ładowania dostępnych godzin.</div>';
+            });
     }
 });
 </script>
-
 {% endblock %}

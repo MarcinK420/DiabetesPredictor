@@ -10,4 +10,5 @@ urlpatterns = [
     path('upcoming/', views.upcoming_appointments, name='upcoming'),
     path('edit/<int:appointment_id>/', views.edit_appointment, name='edit_appointment'),
     path('cancel/<int:appointment_id>/', views.cancel_appointment, name='cancel_appointment'),
+    path('api/available-slots/', views.get_available_time_slots, name='available_time_slots'),
 ]
