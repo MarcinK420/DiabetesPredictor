@@ -24,6 +24,14 @@
                     Po anulowaniu będziesz musiał odczekać 2 minuty przed zapisaniem się na nową wizytę.
                 </div>
 
+                {% if is_part_of_series %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-repeat"></i>
+                        <strong>Wizyta cykliczna:</strong> Ta wizyta jest częścią serii {{ series_appointments|length }} wizyt.
+                        Możesz anulować tylko tę wizytę lub całą serię.
+                    </div>
+                {% endif %}
+
                 <div class="row">
                     <div class="col-md-6">
                         <h6>Szczegóły wizyty do anulowania:</h6>
@@ -38,6 +46,12 @@
 
                         <p><strong>Powód wizyty:</strong><br>
                            {{ appointment.reason }}</p>
+
+                        {% if is_part_of_series %}
+                            <p><strong>Typ:</strong><br>
+                               <span class="badge bg-info"><i class="fas fa-repeat"></i> Wizyta cykliczna ({{ appointment.get_recurrence_pattern_display }})</span>
+                            </p>
+                        {% endif %}
                     </div>
 
                     <div class="col-md-6">
@@ -57,13 +71,46 @@
                 <form method="post" class="mt-4">
                     {% csrf_token %}
 
+                    {% if is_part_of_series %}
+                        <div class="mb-4">
+                            <h6>Opcje anulowania:</h6>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="cancel_series" value="no" id="cancel_single" checked>
+                                <label class="form-check-label" for="cancel_single">
+                                    <strong>Anuluj tylko tę wizytę</strong>
+                                    <small class="d-block text-muted">Pozostałe wizyty z serii pozostaną aktywne</small>
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="cancel_series" value="yes" id="cancel_all">
+                                <label class="form-check-label" for="cancel_all">
+                                    <strong>Anuluj całą serię ({{ series_appointments|length }} wizyt)</strong>
+                                    <small class="d-block text-muted">Wszystkie przyszłe wizyty z tej serii zostaną anulowane</small>
+                                </label>
+                            </div>
+
+                            {% if series_appointments %}
+                                <div id="series-preview" class="mt-3" style="display: none;">
+                                    <div class="alert alert-warning">
+                                        <strong>Wizyty do anulowania:</strong>
+                                        <ul class="mb-0 mt-2">
+                                            {% for appt in series_appointments %}
+                                                <li>{{ appt.appointment_date|date:"l, j F Y, H:i" }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+
                     <div class="text-center">
-                        <h5 class="mb-3">Czy na pewno chcesz anulować tę wizytę?</h5>
+                        <h5 class="mb-3">Czy na pewno chcesz anulować?</h5>
 
                         <div class="d-grid gap-2 d-md-flex justify-content-md-center">
                             <button type="submit" name="confirm_cancellation" value="yes"
                                     class="btn btn-danger btn-lg me-md-2">
-                                <i class="fas fa-times"></i> TAK - Anuluj wizytę
+                                <i class="fas fa-times"></i> TAK - Anuluj
                             </button>
 
                             <button type="submit" name="confirm_cancellation" value="no"
@@ -102,10 +149,37 @@
 // Add confirmation dialog as extra safety measure
 document.addEventListener('DOMContentLoaded', function() {
     const cancelButton = document.querySelector('button[value="yes"]');
+    const cancelAllRadio = document.getElementById('cancel_all');
+    const cancelSingleRadio = document.getElementById('cancel_single');
+    const seriesPreview = document.getElementById('series-preview');
+
     if (cancelButton) {
         cancelButton.addEventListener('click', function(e) {
-            if (!confirm('Ostateczne potwierdzenie: Czy na pewno chcesz anulować tę wizytę?')) {
+            let message = 'Ostateczne potwierdzenie: Czy na pewno chcesz anulować?';
+
+            if (cancelAllRadio && cancelAllRadio.checked) {
+                message = 'Ostateczne potwierdzenie: Czy na pewno chcesz anulować CAŁĄ SERIĘ wizyt?';
+            }
+
+            if (!confirm(message)) {
                 e.preventDefault();
+            }
+        });
+    }
+
+    // Show/hide series preview
+    if (cancelAllRadio && seriesPreview) {
+        cancelAllRadio.addEventListener('change', function() {
+            if (this.checked) {
+                seriesPreview.style.display = 'block';
+            }
+        });
+    }
+
+    if (cancelSingleRadio && seriesPreview) {
+        cancelSingleRadio.addEventListener('change', function() {
+            if (this.checked) {
+                seriesPreview.style.display = 'none';
             }
         });
     }

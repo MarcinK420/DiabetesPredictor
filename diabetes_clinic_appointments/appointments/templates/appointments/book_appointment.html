@@ -108,6 +108,72 @@
                         </div>
                     </div>
 
+                    <!-- Recurring appointment options -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card bg-light mb-3">
+                                <div class="card-body">
+                                    <h6 class="card-title"><i class="fas fa-repeat"></i> Opcje cykliczne (opcjonalne)</h6>
+
+                                    <div class="row">
+                                        <div class="col-12 mb-3">
+                                            <div class="form-check">
+                                                {{ form.is_recurring }}
+                                                <label class="form-check-label" for="id_is_recurring">
+                                                    {{ form.is_recurring.label }}
+                                                </label>
+                                                {% if form.is_recurring.help_text %}
+                                                    <small class="form-text text-muted d-block">
+                                                        {{ form.is_recurring.help_text }}
+                                                    </small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div id="recurring-options" style="display: none;">
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label for="id_recurrence_pattern" class="form-label">
+                                                    {{ form.recurrence_pattern.label }}
+                                                </label>
+                                                {{ form.recurrence_pattern }}
+                                                {% if form.recurrence_pattern.errors %}
+                                                    <div class="invalid-feedback d-block">
+                                                        {{ form.recurrence_pattern.errors }}
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+
+                                            <div class="col-md-6 mb-3">
+                                                <label for="id_recurrence_end_date" class="form-label">
+                                                    {{ form.recurrence_end_date.label }}
+                                                </label>
+                                                {{ form.recurrence_end_date }}
+                                                {% if form.recurrence_end_date.errors %}
+                                                    <div class="invalid-feedback d-block">
+                                                        {{ form.recurrence_end_date.errors }}
+                                                    </div>
+                                                {% endif %}
+                                                {% if form.recurrence_end_date.help_text %}
+                                                    <small class="form-text text-muted">
+                                                        {{ form.recurrence_end_date.help_text }}
+                                                    </small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+
+                                        <div class="alert alert-info mb-0">
+                                            <i class="fas fa-info-circle"></i>
+                                            <strong>Uwaga:</strong> System automatycznie pominie weekendy i zajęte terminy.
+                                            Utworzone zostaną tylko wizyty w dostępnych terminach.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="row">
                         <div class="col-12">
                             <div class="d-grid gap-2 d-md-flex justify-content-md-end">
@@ -323,6 +389,55 @@ document.addEventListener('DOMContentLoaded', function() {
                 slotsLoading.style.display = 'none';
                 slotsList.innerHTML = '<div class="text-danger">Błąd podczas ładowania dostępnych godzin.</div>';
             });
+    }
+
+    // Handle recurring appointment checkbox
+    const isRecurringCheckbox = document.getElementById('id_is_recurring');
+    const recurringOptions = document.getElementById('recurring-options');
+    const recurrenceEndDateInput = document.getElementById('id_recurrence_end_date');
+
+    if (isRecurringCheckbox) {
+        isRecurringCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                recurringOptions.style.display = 'block';
+
+                // Set min and max date for end date based on appointment date
+                if (flatpickrInstance && flatpickrInstance.selectedDates.length > 0) {
+                    const selectedDate = flatpickrInstance.selectedDates[0];
+                    const minDate = new Date(selectedDate);
+                    minDate.setDate(minDate.getDate() + 7); // At least 1 week after start
+
+                    const maxDate = new Date(selectedDate);
+                    maxDate.setDate(maxDate.getDate() + 180); // Max 6 months
+
+                    if (recurrenceEndDateInput) {
+                        recurrenceEndDateInput.min = minDate.toISOString().split('T')[0];
+                        recurrenceEndDateInput.max = maxDate.toISOString().split('T')[0];
+                    }
+                }
+            } else {
+                recurringOptions.style.display = 'none';
+            }
+        });
+    }
+
+    // Update end date constraints when appointment date changes
+    if (flatpickrInstance) {
+        flatpickrInstance.config.onChange.push(function(selectedDates) {
+            if (isRecurringCheckbox && isRecurringCheckbox.checked && selectedDates.length > 0) {
+                const selectedDate = selectedDates[0];
+                const minDate = new Date(selectedDate);
+                minDate.setDate(minDate.getDate() + 7);
+
+                const maxDate = new Date(selectedDate);
+                maxDate.setDate(maxDate.getDate() + 180);
+
+                if (recurrenceEndDateInput) {
+                    recurrenceEndDateInput.min = minDate.toISOString().split('T')[0];
+                    recurrenceEndDateInput.max = maxDate.toISOString().split('T')[0];
+                }
+            }
+        });
     }
 });
 </script>

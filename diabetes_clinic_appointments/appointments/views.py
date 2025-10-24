@@ -4,10 +4,81 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.utils import timezone
 from django.http import JsonResponse
+from django.db import transaction
 from datetime import datetime, timedelta, time
+from dateutil.relativedelta import relativedelta
 from .models import Appointment
 from .forms import AppointmentBookingForm, AppointmentEditForm
 from doctors.models import Doctor
+
+
+def generate_recurring_appointments(parent_appointment, recurrence_pattern, end_date):
+    """
+    Generuje serię wizyt cyklicznych na podstawie wzorca.
+
+    Args:
+        parent_appointment: Pierwsza wizyta w serii
+        recurrence_pattern: 'weekly', 'biweekly', 'monthly'
+        end_date: Data końca serii
+
+    Returns:
+        Lista utworzonych wizyt
+    """
+    created_appointments = []
+    current_date = parent_appointment.appointment_date
+
+    # Określ interwał na podstawie wzorca
+    if recurrence_pattern == 'weekly':
+        delta = timedelta(weeks=1)
+    elif recurrence_pattern == 'biweekly':
+        delta = timedelta(weeks=2)
+    elif recurrence_pattern == 'monthly':
+        delta = None  # będziemy używać relativedelta
+    else:
+        return []
+
+    # Generuj wizyty do daty końcowej
+    while True:
+        if recurrence_pattern == 'monthly':
+            current_date = current_date + relativedelta(months=1)
+        else:
+            current_date = current_date + delta
+
+        # Sprawdź czy przekroczyliśmy datę końcową
+        if current_date.date() > end_date:
+            break
+
+        # Sprawdź czy to dzień roboczy (poniedziałek-piątek)
+        if current_date.weekday() >= 5:
+            continue
+
+        # Sprawdź czy nie ma konfliktu z innymi wizytami
+        start_time = current_date - timedelta(minutes=15)
+        end_time = current_date + timedelta(minutes=45)
+
+        conflicting = Appointment.objects.filter(
+            doctor=parent_appointment.doctor,
+            appointment_date__range=(start_time, end_time),
+            status='scheduled'
+        ).exists()
+
+        if not conflicting:
+            # Utwórz wizytę w serii
+            appointment = Appointment.objects.create(
+                patient=parent_appointment.patient,
+                doctor=parent_appointment.doctor,
+                appointment_date=current_date,
+                status='scheduled',
+                reason=parent_appointment.reason,
+                duration_minutes=parent_appointment.duration_minutes,
+                is_recurring=True,
+                recurrence_pattern=recurrence_pattern,
+                recurrence_end_date=end_date,
+                parent_appointment=parent_appointment
+            )
+            created_appointments.append(appointment)
+
+    return created_appointments
 
 @login_required
 def patient_appointment_history(request):
@@ -68,12 +139,48 @@ def book_appointment(request):
     if request.method == 'POST':
         form = AppointmentBookingForm(request.POST)
         if form.is_valid():
-            appointment = form.save(commit=False)
-            appointment.patient = request.user.patient_profile
-            appointment.save()
+            is_recurring = form.cleaned_data.get('is_recurring', False)
+            recurrence_pattern = form.cleaned_data.get('recurrence_pattern')
+            recurrence_end_date = form.cleaned_data.get('recurrence_end_date')
 
-            messages.success(request, 'Pomyślnie zapisano na wizytę!')
-            return redirect('appointments:patient_history')
+            try:
+                with transaction.atomic():
+                    # Create the parent appointment
+                    appointment = form.save(commit=False)
+                    appointment.patient = request.user.patient_profile
+
+                    if is_recurring:
+                        appointment.is_recurring = True
+                        appointment.recurrence_pattern = recurrence_pattern
+                        appointment.recurrence_end_date = recurrence_end_date
+                        appointment.parent_appointment = None  # This is the parent
+
+                    appointment.save()
+
+                    # Generate recurring appointments if needed
+                    if is_recurring and recurrence_pattern != 'none':
+                        created_appointments = generate_recurring_appointments(
+                            appointment,
+                            recurrence_pattern,
+                            recurrence_end_date
+                        )
+
+                        if created_appointments:
+                            messages.success(
+                                request,
+                                f'Pomyślnie utworzono serię {len(created_appointments) + 1} wizyt cyklicznych!'
+                            )
+                        else:
+                            messages.success(
+                                request,
+                                'Pomyślnie zapisano na wizytę! (Nie udało się utworzyć dodatkowych wizyt w serii ze względu na konflikty terminów)'
+                            )
+                    else:
+                        messages.success(request, 'Pomyślnie zapisano na wizytę!')
+
+                return redirect('appointments:patient_history')
+            except Exception as e:
+                messages.error(request, f'Wystąpił błąd podczas tworzenia wizyt: {str(e)}')
         else:
             messages.error(request, 'Sprawdź poprawność wprowadzonych danych.')
     else:
@@ -188,19 +295,41 @@ def cancel_appointment(request, appointment_id):
         messages.error(request, 'Nie można anulować wizyty z przeszłości.')
         return redirect('appointments:upcoming')
 
+    # Check if this appointment is part of a series
+    series_appointments = []
+    if appointment.is_recurring or appointment.parent_appointment:
+        series_appointments = list(appointment.get_series_appointments().filter(
+            status='scheduled',
+            appointment_date__gte=timezone.now()
+        ))
+
     if request.method == 'POST':
         # Get confirmation from the form
         if request.POST.get('confirm_cancellation') == 'yes':
-            # Cancel the appointment
-            appointment.status = 'cancelled'
-            appointment.save()
+            cancel_series = request.POST.get('cancel_series') == 'yes'
 
-            # Update patient's last cancellation time
-            patient = request.user.patient_profile
-            patient.last_cancellation_time = timezone.now()
-            patient.save()
+            with transaction.atomic():
+                if cancel_series and series_appointments:
+                    # Cancel all appointments in the series
+                    cancelled_count = 0
+                    for appt in series_appointments:
+                        appt.status = 'cancelled'
+                        appt.save()
+                        cancelled_count += 1
 
-            messages.success(request, 'Pomyślnie odwołano wizytę!')
+                    messages.success(request, f'Pomyślnie odwołano {cancelled_count} wizyt z serii!')
+                else:
+                    # Cancel only this appointment
+                    appointment.status = 'cancelled'
+                    appointment.save()
+
+                    messages.success(request, 'Pomyślnie odwołano wizytę!')
+
+                # Update patient's last cancellation time
+                patient = request.user.patient_profile
+                patient.last_cancellation_time = timezone.now()
+                patient.save()
+
             return redirect('appointments:upcoming')
         else:
             # User chose "No" - redirect back
@@ -211,6 +340,8 @@ def cancel_appointment(request, appointment_id):
     context = {
         'appointment': appointment,
         'title': 'Anuluj wizytę',
+        'series_appointments': series_appointments,
+        'is_part_of_series': len(series_appointments) > 1,
     }
     return render(request, 'appointments/cancel_appointment.html', context)
 
