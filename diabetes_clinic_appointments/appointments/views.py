@@ -219,7 +219,7 @@ def cancel_appointment(request, appointment_id):
 def get_available_time_slots(request):
     """
     API endpoint that returns available time slots for a specific doctor on a specific date.
-    Returns JSON with available hours.
+    Returns JSON with available hours and suggestions based on patient history.
     """
     doctor_id = request.GET.get('doctor_id')
     date_str = request.GET.get('date')  # Format: YYYY-MM-DD
@@ -237,6 +237,41 @@ def get_available_time_slots(request):
     # Check if the date is a weekend
     if selected_date.weekday() >= 5:  # Saturday = 5, Sunday = 6
         return JsonResponse({'available_slots': [], 'message': 'Weekends are not available'})
+
+    # Analyze patient history for suggestions
+    suggested_slots = []
+    if request.user.is_authenticated and hasattr(request.user, 'patient_profile'):
+        patient = request.user.patient_profile
+
+        # Get completed appointments from the past
+        past_appointments = Appointment.objects.filter(
+            patient=patient,
+            status='completed',
+            appointment_date__lt=timezone.now()
+        ).order_by('-appointment_date')[:10]  # Last 10 appointments
+
+        if past_appointments.exists():
+            # Analyze preferred days of week
+            weekday_counts = {}
+            hour_counts = {}
+
+            for appt in past_appointments:
+                weekday = appt.appointment_date.weekday()
+                hour = appt.appointment_date.hour
+
+                weekday_counts[weekday] = weekday_counts.get(weekday, 0) + 1
+                hour_counts[hour] = hour_counts.get(hour, 0) + 1
+
+            # Find most common weekday and hours
+            preferred_weekday = max(weekday_counts, key=weekday_counts.get) if weekday_counts else None
+            preferred_hours = sorted(hour_counts.items(), key=lambda x: x[1], reverse=True)[:3]
+            preferred_hours_list = [h[0] for h in preferred_hours]
+
+            # If selected date matches preferred weekday, suggest preferred hours
+            if preferred_weekday is not None and selected_date.weekday() == preferred_weekday:
+                for hour in preferred_hours_list:
+                    for minute in [0, 15, 30, 45]:
+                        suggested_slots.append(f"{hour:02d}:{minute:02d}")
 
     # Generate all possible time slots (8:00 - 17:00, every 15 minutes)
     all_slots = []
@@ -287,9 +322,13 @@ def get_available_time_slots(request):
     # Filter available slots
     available_slots = [slot for slot in all_slots if slot not in occupied_slots]
 
+    # Filter suggested slots to only available ones
+    suggested_available = [slot for slot in suggested_slots if slot in available_slots]
+
     return JsonResponse({
         'available_slots': available_slots,
         'occupied_slots': list(occupied_slots),
+        'suggested_slots': suggested_available,
         'date': date_str,
         'doctor_name': f"Dr. {doctor.user.first_name} {doctor.user.last_name}"
     })

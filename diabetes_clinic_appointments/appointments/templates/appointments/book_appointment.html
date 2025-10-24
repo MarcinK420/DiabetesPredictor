@@ -281,12 +281,40 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data.available_slots.length === 0) {
                     slotsList.innerHTML = '<div class="text-warning">Brak dostępnych godzin w tym dniu.</div>';
                 } else {
-                    let slotsHTML = '<div class="d-flex flex-wrap gap-2">';
+                    let slotsHTML = '';
+
+                    // Show suggested slots first if any
+                    if (data.suggested_slots && data.suggested_slots.length > 0) {
+                        slotsHTML += '<div class="mb-3">';
+                        slotsHTML += '<strong class="text-primary"><i class="fas fa-star"></i> Rekomendowane dla Ciebie (na podstawie Twojej historii):</strong>';
+                        slotsHTML += '<div class="d-flex flex-wrap gap-2 mt-2">';
+                        data.suggested_slots.forEach(slot => {
+                            slotsHTML += `<span class="badge bg-warning text-dark"><i class="fas fa-star"></i> ${slot}</span>`;
+                        });
+                        slotsHTML += '</div>';
+                        slotsHTML += '</div>';
+                    }
+
+                    // Show all available slots
+                    slotsHTML += '<div>';
+                    slotsHTML += '<strong>Wszystkie dostępne godziny:</strong>';
+                    slotsHTML += '<div class="d-flex flex-wrap gap-2 mt-2">';
                     data.available_slots.forEach(slot => {
-                        slotsHTML += `<span class="badge bg-success">${slot}</span>`;
+                        const isSuggested = data.suggested_slots && data.suggested_slots.includes(slot);
+                        if (isSuggested) {
+                            slotsHTML += `<span class="badge bg-warning text-dark"><i class="fas fa-star"></i> ${slot}</span>`;
+                        } else {
+                            slotsHTML += `<span class="badge bg-success">${slot}</span>`;
+                        }
                     });
                     slotsHTML += '</div>';
                     slotsHTML += `<small class="text-muted d-block mt-2">Liczba dostępnych terminów: ${data.available_slots.length}</small>`;
+
+                    if (data.suggested_slots && data.suggested_slots.length > 0) {
+                        slotsHTML += `<small class="text-muted d-block"><i class="fas fa-info-circle"></i> Sugerowane terminy są oznaczone gwiazdką</small>`;
+                    }
+                    slotsHTML += '</div>';
+
                     slotsList.innerHTML = slotsHTML;
                 }
             })
