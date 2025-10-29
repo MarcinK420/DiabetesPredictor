@@ -2,6 +2,7 @@ from django.db import models
 from django.conf import settings
 from patients.models import Patient
 from doctors.models import Doctor
+from ckeditor.fields import RichTextField
 
 class Appointment(models.Model):
     STATUS_CHOICES = [
@@ -23,7 +24,7 @@ class Appointment(models.Model):
     appointment_date = models.DateTimeField()
     status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='scheduled')
     reason = models.CharField(max_length=200, help_text="Powód wizyty")
-    notes = models.TextField(blank=True, help_text="Notatki z wizyty")
+    notes = RichTextField(blank=True, null=True, config_name='doctor_notes', help_text="Notatki z wizyty (dla lekarza)")
     duration_minutes = models.PositiveIntegerField(default=30)
 
     # Recurring appointment fields

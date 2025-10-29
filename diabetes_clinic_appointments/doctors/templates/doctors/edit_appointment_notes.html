@@ -1,0 +1,229 @@
+{% extends 'authentication/base.html' %}
+{% load static %}
+
+{% block title %}Edycja Notatek z Wizyty - Klinika Diabetologiczna{% endblock %}
+
+{% block extra_css %}
+{{ form.media.css }}
+<style>
+    .appointment-info-card {
+        background-color: #f8f9fa;
+        border-left: 4px solid #007bff;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    .info-label {
+        font-weight: 600;
+        color: #6c757d;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .info-value {
+        font-size: 1.1rem;
+        color: #212529;
+        margin-top: 0.25rem;
+    }
+    .status-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: 500;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header with breadcrumb -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'doctors:dashboard' %}">
+                            <i class="fas fa-home"></i> Panel Lekarza
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'doctors:patients_list' %}">
+                            <i class="fas fa-users"></i> Spis Pacjentów
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'doctors:patient_detail' patient.id %}">
+                            {{ patient.user.first_name }} {{ patient.user.last_name }}
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item active" aria-current="page">Edycja Notatek</li>
+                </ol>
+            </nav>
+
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="display-6 mb-2">
+                        <i class="fas fa-notes-medical text-primary"></i>
+                        Notatki z Wizyty
+                    </h1>
+                    <p class="text-muted mb-0">Edytuj notatki dla pacjenta: {{ patient.user.first_name }} {{ patient.user.last_name }}</p>
+                </div>
+                <div>
+                    <a href="{% url 'doctors:patient_detail' patient.id %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Powrót
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Messages -->
+    {% if messages %}
+        <div class="row mb-4">
+            <div class="col-12">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Appointment Information Card -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="appointment-info-card">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="info-label">Data wizyty</div>
+                        <div class="info-value">
+                            <i class="fas fa-calendar-alt text-primary"></i>
+                            {{ appointment.appointment_date|date:"d.m.Y" }}
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="info-label">Godzina</div>
+                        <div class="info-value">
+                            <i class="fas fa-clock text-primary"></i>
+                            {{ appointment.appointment_date|date:"H:i" }}
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="info-label">Powód wizyty</div>
+                        <div class="info-value">
+                            <i class="fas fa-file-medical text-primary"></i>
+                            {{ appointment.reason }}
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="info-label">Status</div>
+                        <div class="info-value">
+                            {% if appointment.status == 'scheduled' %}
+                                <span class="badge bg-primary status-badge">
+                                    <i class="fas fa-calendar-check"></i> Zaplanowana
+                                </span>
+                            {% elif appointment.status == 'completed' %}
+                                <span class="badge bg-success status-badge">
+                                    <i class="fas fa-check-circle"></i> Zakończona
+                                </span>
+                            {% elif appointment.status == 'cancelled' %}
+                                <span class="badge bg-danger status-badge">
+                                    <i class="fas fa-times-circle"></i> Anulowana
+                                </span>
+                            {% elif appointment.status == 'no_show' %}
+                                <span class="badge bg-warning status-badge">
+                                    <i class="fas fa-exclamation-triangle"></i> Niestawiennictwo
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notes Form -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-edit"></i> Formularz Notatek
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="notes-form">
+                        {% csrf_token %}
+
+                        <!-- Status Field -->
+                        <div class="mb-4">
+                            <label for="{{ form.status.id_for_label }}" class="form-label">
+                                <i class="fas fa-info-circle"></i> {{ form.status.label }}
+                            </label>
+                            {{ form.status }}
+                            <div class="form-text">{{ form.status.help_text }}</div>
+                            {% if form.status.errors %}
+                                <div class="alert alert-danger mt-2">
+                                    {{ form.status.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Notes Field with CKEditor -->
+                        <div class="mb-4">
+                            <label for="{{ form.notes.id_for_label }}" class="form-label">
+                                <i class="fas fa-notes-medical"></i> {{ form.notes.label }}
+                            </label>
+                            {{ form.notes }}
+                            <div class="form-text">{{ form.notes.help_text }}</div>
+                            {% if form.notes.errors %}
+                                <div class="alert alert-danger mt-2">
+                                    {{ form.notes.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a href="{% url 'doctors:patient_detail' patient.id %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Anuluj
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-save"></i> Zapisz Notatki
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <h6 class="alert-heading">
+                    <i class="fas fa-info-circle"></i> Wskazówki dotyczące notatek
+                </h6>
+                <ul class="mb-0">
+                    <li>Używaj pogrubienia dla najważniejszych informacji</li>
+                    <li>Twórz listy punktowe dla przejrzystości</li>
+                    <li>Korzystaj z tabel do prezentacji wyników badań</li>
+                    <li>Koloruj tekst aby wyróżnić istotne informacje (np. czerwony dla alergii)</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ form.media.js }}
+<script>
+    // Additional JavaScript if needed
+    document.addEventListener('DOMContentLoaded', function() {
+        // Auto-save draft functionality could be added here
+        console.log('CKEditor form loaded');
+    });
+</script>
+{% endblock %}

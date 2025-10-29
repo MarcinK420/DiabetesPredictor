@@ -1,9 +1,11 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from django.utils import timezone
 from django.core.paginator import Paginator
 from django.db.models import Count, Q
 from django.http import Http404
+from .forms import AppointmentNotesForm
 
 @login_required
 def dashboard(request):
@@ -251,3 +253,41 @@ def patient_detail(request, patient_id):
     }
 
     return render(request, 'doctors/patient_detail.html', context)
+
+
+@login_required
+def edit_appointment_notes(request, appointment_id):
+    """Widok dla lekarza do edycji notatek z wizyty"""
+    if not request.user.is_doctor():
+        return redirect('authentication:login')
+
+    doctor = request.user.doctor_profile
+
+    # Get appointment and verify doctor has access
+    from appointments.models import Appointment
+
+    appointment = get_object_or_404(Appointment, id=appointment_id)
+
+    # Verify this appointment belongs to this doctor
+    if appointment.doctor != doctor:
+        raise Http404("Nie masz uprawnień do edycji tej wizyty.")
+
+    if request.method == 'POST':
+        form = AppointmentNotesForm(request.POST, instance=appointment)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Notatki zostały zapisane pomyślnie!')
+            return redirect('doctors:patient_detail', patient_id=appointment.patient.id)
+        else:
+            messages.error(request, 'Wystąpił błąd podczas zapisywania notatek.')
+    else:
+        form = AppointmentNotesForm(instance=appointment)
+
+    context = {
+        'doctor': doctor,
+        'appointment': appointment,
+        'form': form,
+        'patient': appointment.patient,
+    }
+
+    return render(request, 'doctors/edit_appointment_notes.html', context)
