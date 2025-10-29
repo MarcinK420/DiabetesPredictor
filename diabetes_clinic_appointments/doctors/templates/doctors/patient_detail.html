@@ -374,11 +374,20 @@
                                                 {% endif %}
                                             </td>
                                             <td class="text-center">
-                                                <a href="{% url 'doctors:edit_appointment_notes' appointment.id %}"
-                                                   class="btn btn-sm btn-primary"
-                                                   title="Edytuj notatki z wizyty">
-                                                    <i class="fas fa-edit"></i> Notatki
-                                                </a>
+                                                <div class="btn-group" role="group">
+                                                    {% if appointment.notes %}
+                                                        <a href="{% url 'doctors:view_appointment_notes' appointment.id %}"
+                                                           class="btn btn-sm btn-info"
+                                                           title="Podgląd notatek">
+                                                            <i class="fas fa-eye"></i> Podgląd
+                                                        </a>
+                                                    {% endif %}
+                                                    <a href="{% url 'doctors:edit_appointment_notes' appointment.id %}"
+                                                       class="btn btn-sm btn-primary"
+                                                       title="Edytuj notatki z wizyty">
+                                                        <i class="fas fa-edit"></i> {% if appointment.notes %}Edytuj{% else %}Dodaj{% endif %}
+                                                    </a>
+                                                </div>
                                             </td>
                                         </tr>
                                     {% endfor %}

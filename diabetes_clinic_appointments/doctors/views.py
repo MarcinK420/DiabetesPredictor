@@ -277,17 +277,53 @@ def edit_appointment_notes(request, appointment_id):
         if form.is_valid():
             form.save()
             messages.success(request, 'Notatki zostały zapisane pomyślnie!')
-            return redirect('doctors:patient_detail', patient_id=appointment.patient.id)
+
+            # Check if there's a return_to parameter
+            return_to = request.GET.get('return_to', 'patient_detail')
+            if return_to == 'upcoming':
+                return redirect('doctors:upcoming_appointments')
+            else:
+                return redirect('doctors:patient_detail', patient_id=appointment.patient.id)
         else:
             messages.error(request, 'Wystąpił błąd podczas zapisywania notatek.')
     else:
         form = AppointmentNotesForm(instance=appointment)
+
+    # Pass return_to parameter to template
+    return_to = request.GET.get('return_to', 'patient_detail')
 
     context = {
         'doctor': doctor,
         'appointment': appointment,
         'form': form,
         'patient': appointment.patient,
+        'return_to': return_to,
     }
 
     return render(request, 'doctors/edit_appointment_notes.html', context)
+
+
+@login_required
+def view_appointment_notes(request, appointment_id):
+    """Widok do podglądu notatek z wizyty (read-only)"""
+    if not request.user.is_doctor():
+        return redirect('authentication:login')
+
+    doctor = request.user.doctor_profile
+
+    # Get appointment and verify doctor has access
+    from appointments.models import Appointment
+
+    appointment = get_object_or_404(Appointment, id=appointment_id)
+
+    # Verify this appointment belongs to this doctor
+    if appointment.doctor != doctor:
+        raise Http404("Nie masz uprawnień do przeglądania tej wizyty.")
+
+    context = {
+        'doctor': doctor,
+        'appointment': appointment,
+        'patient': appointment.patient,
+    }
+
+    return render(request, 'doctors/view_appointment_notes.html', context)

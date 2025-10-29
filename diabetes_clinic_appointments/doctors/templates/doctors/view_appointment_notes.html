@@ -1,0 +1,222 @@
+{% extends 'authentication/base.html' %}
+{% load static %}
+
+{% block title %}Podgląd Notatek z Wizyty - Klinika Diabetologiczna{% endblock %}
+
+{% block extra_css %}
+<style>
+    .appointment-info-card {
+        background-color: #f8f9fa;
+        border-left: 4px solid #007bff;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    .info-label {
+        font-weight: 600;
+        color: #6c757d;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .info-value {
+        font-size: 1.1rem;
+        color: #212529;
+        margin-top: 0.25rem;
+    }
+    .status-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: 500;
+    }
+    .notes-content {
+        background-color: #ffffff;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 2rem;
+        min-height: 200px;
+        line-height: 1.6;
+    }
+    .notes-content table {
+        width: 100%;
+        margin: 1rem 0;
+        border-collapse: collapse;
+    }
+    .notes-content table td,
+    .notes-content table th {
+        border: 1px solid #dee2e6;
+        padding: 0.5rem;
+    }
+    .notes-content ul, .notes-content ol {
+        padding-left: 2rem;
+        margin: 1rem 0;
+    }
+    .notes-content h1, .notes-content h2, .notes-content h3 {
+        margin-top: 1.5rem;
+        margin-bottom: 1rem;
+    }
+    .empty-notes {
+        color: #6c757d;
+        font-style: italic;
+        text-align: center;
+        padding: 3rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header with breadcrumb -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'doctors:dashboard' %}">
+                            <i class="fas fa-home"></i> Panel Lekarza
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'doctors:patients_list' %}">
+                            <i class="fas fa-users"></i> Spis Pacjentów
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'doctors:patient_detail' patient.id %}">
+                            {{ patient.user.first_name }} {{ patient.user.last_name }}
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item active" aria-current="page">Podgląd Notatek</li>
+                </ol>
+            </nav>
+
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="display-6 mb-2">
+                        <i class="fas fa-file-medical text-primary"></i>
+                        Notatki z Wizyty
+                    </h1>
+                    <p class="text-muted mb-0">Pacjent: {{ patient.user.first_name }} {{ patient.user.last_name }}</p>
+                </div>
+                <div>
+                    <a href="{% url 'doctors:patient_detail' patient.id %}" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-arrow-left"></i> Powrót
+                    </a>
+                    <a href="{% url 'doctors:edit_appointment_notes' appointment.id %}" class="btn btn-primary">
+                        <i class="fas fa-edit"></i> Edytuj Notatki
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Appointment Information Card -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="appointment-info-card">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="info-label">Data wizyty</div>
+                        <div class="info-value">
+                            <i class="fas fa-calendar-alt text-primary"></i>
+                            {{ appointment.appointment_date|date:"d.m.Y" }}
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="info-label">Godzina</div>
+                        <div class="info-value">
+                            <i class="fas fa-clock text-primary"></i>
+                            {{ appointment.appointment_date|date:"H:i" }}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="info-label">Powód wizyty</div>
+                        <div class="info-value">
+                            <i class="fas fa-file-medical text-primary"></i>
+                            {{ appointment.reason }}
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="info-label">Status</div>
+                        <div class="info-value">
+                            {% if appointment.status == 'scheduled' %}
+                                <span class="badge bg-primary status-badge">
+                                    <i class="fas fa-calendar-check"></i> Zaplanowana
+                                </span>
+                            {% elif appointment.status == 'completed' %}
+                                <span class="badge bg-success status-badge">
+                                    <i class="fas fa-check-circle"></i> Zakończona
+                                </span>
+                            {% elif appointment.status == 'cancelled' %}
+                                <span class="badge bg-danger status-badge">
+                                    <i class="fas fa-times-circle"></i> Anulowana
+                                </span>
+                            {% elif appointment.status == 'no_show' %}
+                                <span class="badge bg-warning status-badge">
+                                    <i class="fas fa-exclamation-triangle"></i> Niestawiennictwo
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notes Display -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-notes-medical"></i> Notatki Lekarskie
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="notes-content">
+                        {% if appointment.notes %}
+                            {{ appointment.notes|safe }}
+                        {% else %}
+                            <div class="empty-notes">
+                                <i class="fas fa-file-alt fa-3x mb-3"></i>
+                                <p class="mb-0">Brak notatek z tej wizyty</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-footer bg-light">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <small class="text-muted">
+                                <i class="fas fa-user-md"></i>
+                                Lekarz: Dr. {{ appointment.doctor.user.first_name }} {{ appointment.doctor.user.last_name }}
+                            </small>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <small class="text-muted">
+                                <i class="fas fa-clock"></i>
+                                {% if appointment.updated_at %}
+                                    Ostatnia aktualizacja: {{ appointment.updated_at|date:"d.m.Y H:i" }}
+                                {% else %}
+                                    Utworzono: {{ appointment.created_at|date:"d.m.Y H:i" }}
+                                {% endif %}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="row mt-4">
+        <div class="col-12 text-center">
+            <a href="{% url 'doctors:edit_appointment_notes' appointment.id %}" class="btn btn-primary btn-lg me-2">
+                <i class="fas fa-edit"></i> Edytuj Notatki
+            </a>
+            <a href="{% url 'doctors:patient_detail' patient.id %}" class="btn btn-outline-secondary btn-lg">
+                <i class="fas fa-arrow-left"></i> Powrót do Karty Pacjenta
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
