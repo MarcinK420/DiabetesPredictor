@@ -123,7 +123,7 @@
                         Zarządzaj swoimi danymi zawodowymi, specjalizacją i informacjami kontaktowymi.
                         Aktualizuj swój profil lekarza.
                     </p>
-                    <a href="#" class="btn btn-primary btn-lg w-100">
+                    <a href="{% url 'doctors:doctor_profile' %}" class="btn btn-primary btn-lg w-100">
                         <i class="fas fa-user-edit me-2"></i>Przejdź do profilu
                     </a>
                 </div>
@@ -183,7 +183,7 @@
                             </a>
                         </div>
                         <div class="col-6 mb-2">
-                            <a href="#" class="btn btn-outline-secondary w-100">
+                            <a href="{% url 'doctors:edit_profile' %}" class="btn btn-outline-secondary w-100">
                                 <i class="fas fa-edit"></i><br>
                                 <small>Edytuj profil</small>
                             </a>

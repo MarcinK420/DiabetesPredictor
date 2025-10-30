@@ -1,0 +1,335 @@
+{% extends 'authentication/base.html' %}
+
+{% block title %}Edycja Profilu - Klinika Diabetologiczna{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header with breadcrumb -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'doctors:dashboard' %}">
+                            <i class="fas fa-home"></i> Panel Lekarza
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'doctors:doctor_profile' %}">Profil</a>
+                    </li>
+                    <li class="breadcrumb-item active" aria-current="page">Edycja</li>
+                </ol>
+            </nav>
+
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="display-6 mb-2">Edycja Profilu</h1>
+                    <p class="text-muted mb-0">Zaktualizuj swoje dane zawodowe i osobowe</p>
+                </div>
+                <div>
+                    <a href="{% url 'doctors:doctor_profile' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Anuluj
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Messages -->
+    {% if messages %}
+        <div class="row mb-4">
+            <div class="col-12">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Edit Profile Form -->
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="row">
+            <!-- Personal Information -->
+            <div class="col-lg-6 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="fas fa-user"></i> Dane Osobowe</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="{{ form.first_name.id_for_label }}" class="form-label">
+                                {{ form.first_name.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.first_name }}
+                            {% if form.first_name.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.first_name.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.last_name.id_for_label }}" class="form-label">
+                                {{ form.last_name.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.last_name }}
+                            {% if form.last_name.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.last_name.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.email.id_for_label }}" class="form-label">
+                                {{ form.email.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.email }}
+                            {% if form.email.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.email.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-0">
+                            <label for="{{ form.phone_number.id_for_label }}" class="form-label">
+                                {{ form.phone_number.label }}
+                            </label>
+                            {{ form.phone_number }}
+                            {% if form.phone_number.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.phone_number.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Professional Information -->
+            <div class="col-lg-6 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="fas fa-user-md"></i> Informacje Zawodowe</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="{{ form.specialization.id_for_label }}" class="form-label">
+                                {{ form.specialization.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.specialization }}
+                            {% if form.specialization.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.specialization.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.years_of_experience.id_for_label }}" class="form-label">
+                                {{ form.years_of_experience.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.years_of_experience }}
+                            {% if form.years_of_experience.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.years_of_experience.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.consultation_fee.id_for_label }}" class="form-label">
+                                {{ form.consultation_fee.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                {{ form.consultation_fee }}
+                                <span class="input-group-text">zł</span>
+                            </div>
+                            {% if form.consultation_fee.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.consultation_fee.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-0">
+                            <div class="form-check">
+                                {{ form.is_accepting_patients }}
+                                <label class="form-check-label" for="{{ form.is_accepting_patients.id_for_label }}">
+                                    {{ form.is_accepting_patients.label }}
+                                </label>
+                            </div>
+                            {% if form.is_accepting_patients.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.is_accepting_patients.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Working Hours -->
+            <div class="col-lg-6 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="fas fa-clock"></i> Godziny Pracy i Lokalizacja</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="{{ form.working_days.id_for_label }}" class="form-label">
+                                {{ form.working_days.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.working_days }}
+                            {% if form.working_days.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.working_days.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="{{ form.working_hours_start.id_for_label }}" class="form-label">
+                                    {{ form.working_hours_start.label }}
+                                    <span class="text-danger">*</span>
+                                </label>
+                                {{ form.working_hours_start }}
+                                {% if form.working_hours_start.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ form.working_hours_start.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="{{ form.working_hours_end.id_for_label }}" class="form-label">
+                                    {{ form.working_hours_end.label }}
+                                    <span class="text-danger">*</span>
+                                </label>
+                                {{ form.working_hours_end }}
+                                {% if form.working_hours_end.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ form.working_hours_end.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="mb-0">
+                            <label for="{{ form.office_address.id_for_label }}" class="form-label">
+                                {{ form.office_address.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.office_address }}
+                            {% if form.office_address.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.office_address.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Education and Biography -->
+            <div class="col-lg-6 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-warning">
+                        <h5 class="mb-0"><i class="fas fa-graduation-cap"></i> Wykształcenie i Biografia</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="{{ form.education.id_for_label }}" class="form-label">
+                                {{ form.education.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.education }}
+                            {% if form.education.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.education.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.certifications.id_for_label }}" class="form-label">
+                                {{ form.certifications.label }}
+                            </label>
+                            {{ form.certifications }}
+                            {% if form.certifications.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.certifications.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-0">
+                            <label for="{{ form.bio.id_for_label }}" class="form-label">
+                                {{ form.bio.label }}
+                            </label>
+                            {{ form.bio }}
+                            {% if form.bio.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.bio.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-body text-center">
+                        <button type="submit" class="btn btn-primary btn-lg px-5">
+                            <i class="fas fa-save"></i> Zapisz Zmiany
+                        </button>
+                        <a href="{% url 'doctors:doctor_profile' %}" class="btn btn-outline-secondary btn-lg px-5 ms-3">
+                            <i class="fas fa-times"></i> Anuluj
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<style>
+.card {
+    border: none;
+}
+
+.card-header {
+    border: none;
+}
+
+.form-label {
+    font-weight: 500;
+    color: #495057;
+}
+
+.text-danger {
+    color: #dc3545 !important;
+}
+</style>
+
+{% endblock %}

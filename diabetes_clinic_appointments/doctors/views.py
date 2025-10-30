@@ -5,7 +5,7 @@ from django.utils import timezone
 from django.core.paginator import Paginator
 from django.db.models import Count, Q
 from django.http import Http404, JsonResponse, FileResponse, HttpResponseForbidden
-from .forms import AppointmentNotesForm, AppointmentAttachmentForm, NoteTemplateForm
+from .forms import AppointmentNotesForm, AppointmentAttachmentForm, NoteTemplateForm, DoctorProfileForm
 
 @login_required
 def dashboard(request):
@@ -569,3 +569,50 @@ def get_template_content(request, template_id):
         'content': template.content,
         'name': template.name,
     })
+
+
+# ============================================
+# Doctor Profile Views
+# ============================================
+
+@login_required
+def doctor_profile(request):
+    """Widok profilu lekarza (tylko do odczytu)"""
+    if not request.user.is_doctor():
+        return redirect('authentication:login')
+
+    doctor = request.user.doctor_profile
+
+    context = {
+        'doctor': doctor,
+        'user': request.user,
+    }
+
+    return render(request, 'doctors/profile.html', context)
+
+
+@login_required
+def edit_profile(request):
+    """Widok edycji profilu lekarza"""
+    if not request.user.is_doctor():
+        return redirect('authentication:login')
+
+    doctor = request.user.doctor_profile
+
+    if request.method == 'POST':
+        form = DoctorProfileForm(request.POST, instance=doctor, user=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Profil został zaktualizowany pomyślnie!')
+            return redirect('doctors:doctor_profile')
+        else:
+            messages.error(request, 'Wystąpił błąd podczas zapisywania profilu.')
+    else:
+        form = DoctorProfileForm(instance=doctor, user=request.user)
+
+    context = {
+        'doctor': doctor,
+        'form': form,
+    }
+
+    return render(request, 'doctors/edit_profile.html', context)
