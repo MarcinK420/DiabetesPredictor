@@ -47,6 +47,55 @@
         </div>
     {% endif %}
 
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-filter"></i>
+                        Filtruj pacjentów
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="search" class="form-label">Wyszukaj pacjenta</label>
+                            <input type="text" class="form-control" id="search" name="search"
+                                   placeholder="Imię, nazwisko lub email..."
+                                   value="{{ search_query }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="diabetes_type" class="form-label">Typ cukrzycy</label>
+                            <select class="form-select" id="diabetes_type" name="diabetes_type">
+                                <option value="">Wszystkie typy</option>
+                                <option value="type1" {% if diabetes_filter == 'type1' %}selected{% endif %}>Typ 1</option>
+                                <option value="type2" {% if diabetes_filter == 'type2' %}selected{% endif %}>Typ 2</option>
+                                <option value="gestational" {% if diabetes_filter == 'gestational' %}selected{% endif %}>Ciążowa</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="appointment_status" class="form-label">Status wizyt</label>
+                            <select class="form-select" id="appointment_status" name="appointment_status">
+                                <option value="">Wszyscy pacjenci</option>
+                                <option value="with_upcoming" {% if appointment_status_filter == 'with_upcoming' %}selected{% endif %}>Z nadchodzącymi wizytami</option>
+                                <option value="without_upcoming" {% if appointment_status_filter == 'without_upcoming' %}selected{% endif %}>Bez nadchodzących wizyt</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search"></i> Szukaj
+                            </button>
+                            <a href="{% url 'doctors:patients_list' %}" class="btn btn-outline-secondary" title="Wyczyść filtry">
+                                <i class="fas fa-times"></i>
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Statistics Overview -->
     <div class="row mb-4">
         <div class="col-lg-6 col-md-6 mb-3">
@@ -101,12 +150,66 @@
                             <table class="table table-hover mb-0">
                                 <thead class="table-light">
                                     <tr>
-                                        <th>Pacjent</th>
-                                        <th>Kontakt</th>
-                                        <th>Typ cukrzycy</th>
-                                        <th class="text-center">Wizyty</th>
-                                        <th>Ostatnia wizyta</th>
-                                        <th>Następna wizyta</th>
+                                        <th>
+                                            <a href="?sort=name&order={% if sort_by == 'name' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{{ filter_params }}" class="text-decoration-none text-dark sortable-header">
+                                                Pacjent
+                                                {% if sort_by == 'name' %}
+                                                    <i class="fas fa-sort-{% if sort_order == 'asc' %}up{% else %}down{% endif %} text-primary"></i>
+                                                {% else %}
+                                                    <i class="fas fa-sort text-muted opacity-50"></i>
+                                                {% endif %}
+                                            </a>
+                                        </th>
+                                        <th>
+                                            <a href="?sort=email&order={% if sort_by == 'email' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{{ filter_params }}" class="text-decoration-none text-dark sortable-header">
+                                                Kontakt
+                                                {% if sort_by == 'email' %}
+                                                    <i class="fas fa-sort-{% if sort_order == 'asc' %}up{% else %}down{% endif %} text-primary"></i>
+                                                {% else %}
+                                                    <i class="fas fa-sort text-muted opacity-50"></i>
+                                                {% endif %}
+                                            </a>
+                                        </th>
+                                        <th>
+                                            <a href="?sort=diabetes_type&order={% if sort_by == 'diabetes_type' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{{ filter_params }}" class="text-decoration-none text-dark sortable-header">
+                                                Typ cukrzycy
+                                                {% if sort_by == 'diabetes_type' %}
+                                                    <i class="fas fa-sort-{% if sort_order == 'asc' %}up{% else %}down{% endif %} text-primary"></i>
+                                                {% else %}
+                                                    <i class="fas fa-sort text-muted opacity-50"></i>
+                                                {% endif %}
+                                            </a>
+                                        </th>
+                                        <th class="text-center">
+                                            <a href="?sort=total_appointments&order={% if sort_by == 'total_appointments' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{{ filter_params }}" class="text-decoration-none text-dark sortable-header">
+                                                Wizyty
+                                                {% if sort_by == 'total_appointments' %}
+                                                    <i class="fas fa-sort-{% if sort_order == 'asc' %}up{% else %}down{% endif %} text-primary"></i>
+                                                {% else %}
+                                                    <i class="fas fa-sort text-muted opacity-50"></i>
+                                                {% endif %}
+                                            </a>
+                                        </th>
+                                        <th>
+                                            <a href="?sort=last_appointment&order={% if sort_by == 'last_appointment' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{{ filter_params }}" class="text-decoration-none text-dark sortable-header">
+                                                Ostatnia wizyta
+                                                {% if sort_by == 'last_appointment' %}
+                                                    <i class="fas fa-sort-{% if sort_order == 'asc' %}up{% else %}down{% endif %} text-primary"></i>
+                                                {% else %}
+                                                    <i class="fas fa-sort text-muted opacity-50"></i>
+                                                {% endif %}
+                                            </a>
+                                        </th>
+                                        <th>
+                                            <a href="?sort=next_appointment&order={% if sort_by == 'next_appointment' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{{ filter_params }}" class="text-decoration-none text-dark sortable-header">
+                                                Następna wizyta
+                                                {% if sort_by == 'next_appointment' %}
+                                                    <i class="fas fa-sort-{% if sort_order == 'asc' %}up{% else %}down{% endif %} text-primary"></i>
+                                                {% else %}
+                                                    <i class="fas fa-sort text-muted opacity-50"></i>
+                                                {% endif %}
+                                            </a>
+                                        </th>
                                         <th class="text-center">Akcje</th>
                                     </tr>
                                 </thead>
@@ -235,10 +338,10 @@
                                 <ul class="pagination pagination-sm mb-0 justify-content-center">
                                     {% if page_obj.has_previous %}
                                         <li class="page-item">
-                                            <a class="page-link" href="?page=1">&laquo; Pierwsza</a>
+                                            <a class="page-link" href="?page=1&sort={{ sort_by }}&order={{ sort_order }}{{ filter_params }}">&laquo; Pierwsza</a>
                                         </li>
                                         <li class="page-item">
-                                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Poprzednia</a>
+                                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}&sort={{ sort_by }}&order={{ sort_order }}{{ filter_params }}">Poprzednia</a>
                                         </li>
                                     {% endif %}
 
@@ -249,17 +352,17 @@
                                             </li>
                                         {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
                                             <li class="page-item">
-                                                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                                <a class="page-link" href="?page={{ num }}&sort={{ sort_by }}&order={{ sort_order }}{{ filter_params }}">{{ num }}</a>
                                             </li>
                                         {% endif %}
                                     {% endfor %}
 
                                     {% if page_obj.has_next %}
                                         <li class="page-item">
-                                            <a class="page-link" href="?page={{ page_obj.next_page_number }}">Następna</a>
+                                            <a class="page-link" href="?page={{ page_obj.next_page_number }}&sort={{ sort_by }}&order={{ sort_order }}{{ filter_params }}">Następna</a>
                                         </li>
                                         <li class="page-item">
-                                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Ostatnia &raquo;</a>
+                                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&sort={{ sort_by }}&order={{ sort_order }}{{ filter_params }}">Ostatnia &raquo;</a>
                                         </li>
                                     {% endif %}
                                 </ul>
@@ -305,6 +408,10 @@
     opacity: 0.75;
 }
 
+.opacity-50 {
+    opacity: 0.5;
+}
+
 .breadcrumb {
     background-color: transparent;
     padding: 0;
@@ -329,6 +436,26 @@
 
 .table-hover tbody tr:hover {
     background-color: rgba(0, 0, 0, 0.025);
+}
+
+/* Sortable header styles */
+.sortable-header {
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.15s ease-in-out;
+}
+
+.sortable-header:hover {
+    color: var(--bs-primary) !important;
+}
+
+.sortable-header i {
+    font-size: 0.85em;
+    margin-left: 0.25rem;
+}
+
+thead th {
+    white-space: nowrap;
 }
 </style>
 

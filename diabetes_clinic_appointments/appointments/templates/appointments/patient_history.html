@@ -15,7 +15,64 @@
                 <i class="fas fa-info-circle"></i>
                 <strong>Wskazówka:</strong> Kliknij w dowolny wiersz tabeli aby szybko podejrzeć szczegóły wizyty w oknie popup, lub użyj przycisków "Podgląd" i "Szczegóły".
             </div>
-            
+
+            <!-- Filters -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-filter"></i>
+                        Filtruj wizyty
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-12 mb-2">
+                            <label for="search" class="form-label">Wyszukaj wizytę</label>
+                            <input type="text" class="form-control" id="search" name="search"
+                                   placeholder="Szukaj po powodzie wizyty..."
+                                   value="{{ search_query }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-select" id="status" name="status">
+                                <option value="">Wszystkie</option>
+                                <option value="scheduled" {% if status_filter == 'scheduled' %}selected{% endif %}>Zaplanowane</option>
+                                <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Zakończone</option>
+                                <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Anulowane</option>
+                                <option value="no_show" {% if status_filter == 'no_show' %}selected{% endif %}>Nieobecność</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="doctor" class="form-label">Lekarz</label>
+                            <select class="form-select" id="doctor" name="doctor">
+                                <option value="">Wszyscy lekarze</option>
+                                {% for doctor in patient_doctors %}
+                                    <option value="{{ doctor.id }}" {% if doctor_filter == doctor.id|stringformat:"s" %}selected{% endif %}>
+                                        Dr. {{ doctor.user.first_name }} {{ doctor.user.last_name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="date_from" class="form-label">Data od</label>
+                            <input type="date" class="form-control" id="date_from" name="date_from" value="{{ date_from }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="date_to" class="form-label">Data do</label>
+                            <input type="date" class="form-control" id="date_to" name="date_to" value="{{ date_to }}">
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search"></i> Szukaj
+                            </button>
+                            <a href="{% url 'appointments:patient_history' %}" class="btn btn-outline-secondary" title="Wyczyść filtry">
+                                <i class="fas fa-times"></i>
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
             <div class="card">
                 <div class="card-header">
                     <h5>Twoje wizyty ({{ appointments.paginator.count }} w sumie)</h5>
@@ -25,10 +82,46 @@
                         <table class="table table-striped">
                             <thead>
                                 <tr>
-                                    <th>Data i godzina</th>
-                                    <th>Lekarz</th>
-                                    <th>Powód wizyty</th>
-                                    <th>Status</th>
+                                    <th>
+                                        <a href="?sort=date&order={% if sort_by == 'date' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{{ filter_params }}" class="text-decoration-none text-dark sortable-header">
+                                            Data i godzina
+                                            {% if sort_by == 'date' %}
+                                                <i class="fas fa-sort-{% if sort_order == 'asc' %}up{% else %}down{% endif %} text-primary"></i>
+                                            {% else %}
+                                                <i class="fas fa-sort text-muted opacity-50"></i>
+                                            {% endif %}
+                                        </a>
+                                    </th>
+                                    <th>
+                                        <a href="?sort=doctor&order={% if sort_by == 'doctor' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{{ filter_params }}" class="text-decoration-none text-dark sortable-header">
+                                            Lekarz
+                                            {% if sort_by == 'doctor' %}
+                                                <i class="fas fa-sort-{% if sort_order == 'asc' %}up{% else %}down{% endif %} text-primary"></i>
+                                            {% else %}
+                                                <i class="fas fa-sort text-muted opacity-50"></i>
+                                            {% endif %}
+                                        </a>
+                                    </th>
+                                    <th>
+                                        <a href="?sort=reason&order={% if sort_by == 'reason' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{{ filter_params }}" class="text-decoration-none text-dark sortable-header">
+                                            Powód wizyty
+                                            {% if sort_by == 'reason' %}
+                                                <i class="fas fa-sort-{% if sort_order == 'asc' %}up{% else %}down{% endif %} text-primary"></i>
+                                            {% else %}
+                                                <i class="fas fa-sort text-muted opacity-50"></i>
+                                            {% endif %}
+                                        </a>
+                                    </th>
+                                    <th>
+                                        <a href="?sort=status&order={% if sort_by == 'status' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{{ filter_params }}" class="text-decoration-none text-dark sortable-header">
+                                            Status
+                                            {% if sort_by == 'status' %}
+                                                <i class="fas fa-sort-{% if sort_order == 'asc' %}up{% else %}down{% endif %} text-primary"></i>
+                                            {% else %}
+                                                <i class="fas fa-sort text-muted opacity-50"></i>
+                                            {% endif %}
+                                        </a>
+                                    </th>
                                     <th>Akcje</th>
                                 </tr>
                             </thead>
@@ -75,25 +168,25 @@
                         <ul class="pagination justify-content-center">
                             {% if appointments.has_previous %}
                                 <li class="page-item">
-                                    <a class="page-link" href="?page=1">&laquo; Pierwsza</a>
+                                    <a class="page-link" href="?page=1&sort={{ sort_by }}&order={{ sort_order }}{{ filter_params }}">&laquo; Pierwsza</a>
                                 </li>
                                 <li class="page-item">
-                                    <a class="page-link" href="?page={{ appointments.previous_page_number }}">Poprzednia</a>
+                                    <a class="page-link" href="?page={{ appointments.previous_page_number }}&sort={{ sort_by }}&order={{ sort_order }}{{ filter_params }}">Poprzednia</a>
                                 </li>
                             {% endif %}
-                            
+
                             <li class="page-item active">
                                 <span class="page-link">
                                     Strona {{ appointments.number }} z {{ appointments.paginator.num_pages }}
                                 </span>
                             </li>
-                            
+
                             {% if appointments.has_next %}
                                 <li class="page-item">
-                                    <a class="page-link" href="?page={{ appointments.next_page_number }}">Następna</a>
+                                    <a class="page-link" href="?page={{ appointments.next_page_number }}&sort={{ sort_by }}&order={{ sort_order }}{{ filter_params }}">Następna</a>
                                 </li>
                                 <li class="page-item">
-                                    <a class="page-link" href="?page={{ appointments.paginator.num_pages }}">Ostatnia &raquo;</a>
+                                    <a class="page-link" href="?page={{ appointments.paginator.num_pages }}&sort={{ sort_by }}&order={{ sort_order }}{{ filter_params }}">Ostatnia &raquo;</a>
                                 </li>
                             {% endif %}
                         </ul>
@@ -163,6 +256,30 @@
 
 .appointment-row:hover td {
     background-color: transparent;
+}
+
+/* Sortable header styles */
+.sortable-header {
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.15s ease-in-out;
+}
+
+.sortable-header:hover {
+    color: var(--bs-primary) !important;
+}
+
+.sortable-header i {
+    font-size: 0.85em;
+    margin-left: 0.25rem;
+}
+
+.opacity-50 {
+    opacity: 0.5;
+}
+
+thead th {
+    white-space: nowrap;
 }
 </style>
 

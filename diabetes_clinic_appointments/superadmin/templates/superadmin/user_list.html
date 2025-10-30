@@ -25,6 +25,7 @@
                     <option value="">Wszystkie</option>
                     <option value="patient" {% if user_type == 'patient' %}selected{% endif %}>Pacjent</option>
                     <option value="doctor" {% if user_type == 'doctor' %}selected{% endif %}>Lekarz</option>
+                    <option value="superadmin" {% if user_type == 'superadmin' %}selected{% endif %}>Superadmin</option>
                 </select>
             </div>
             <div class="col-md-3">
@@ -54,13 +55,67 @@
             <table class="table table-striped table-hover">
                 <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>Użytkownik</th>
-                        <th>Imię i nazwisko</th>
-                        <th>Email</th>
-                        <th>Typ</th>
+                        <th>
+                            <a href="?sort=id&order={% if sort_by == 'id' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if user_type %}&type={{ user_type }}{% endif %}{% if status %}&status={{ status }}{% endif %}" class="text-decoration-none text-dark sortable-header">
+                                ID
+                                {% if sort_by == 'id' %}
+                                    <i class="fas fa-sort-{% if sort_order == 'asc' %}up{% else %}down{% endif %} text-primary"></i>
+                                {% else %}
+                                    <i class="fas fa-sort text-muted opacity-50"></i>
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a href="?sort=username&order={% if sort_by == 'username' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if user_type %}&type={{ user_type }}{% endif %}{% if status %}&status={{ status }}{% endif %}" class="text-decoration-none text-dark sortable-header">
+                                Użytkownik
+                                {% if sort_by == 'username' %}
+                                    <i class="fas fa-sort-{% if sort_order == 'asc' %}up{% else %}down{% endif %} text-primary"></i>
+                                {% else %}
+                                    <i class="fas fa-sort text-muted opacity-50"></i>
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a href="?sort=name&order={% if sort_by == 'name' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if user_type %}&type={{ user_type }}{% endif %}{% if status %}&status={{ status }}{% endif %}" class="text-decoration-none text-dark sortable-header">
+                                Imię i nazwisko
+                                {% if sort_by == 'name' %}
+                                    <i class="fas fa-sort-{% if sort_order == 'asc' %}up{% else %}down{% endif %} text-primary"></i>
+                                {% else %}
+                                    <i class="fas fa-sort text-muted opacity-50"></i>
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a href="?sort=email&order={% if sort_by == 'email' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if user_type %}&type={{ user_type }}{% endif %}{% if status %}&status={{ status }}{% endif %}" class="text-decoration-none text-dark sortable-header">
+                                Email
+                                {% if sort_by == 'email' %}
+                                    <i class="fas fa-sort-{% if sort_order == 'asc' %}up{% else %}down{% endif %} text-primary"></i>
+                                {% else %}
+                                    <i class="fas fa-sort text-muted opacity-50"></i>
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a href="?sort=user_type&order={% if sort_by == 'user_type' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if user_type %}&type={{ user_type }}{% endif %}{% if status %}&status={{ status }}{% endif %}" class="text-decoration-none text-dark sortable-header">
+                                Typ
+                                {% if sort_by == 'user_type' %}
+                                    <i class="fas fa-sort-{% if sort_order == 'asc' %}up{% else %}down{% endif %} text-primary"></i>
+                                {% else %}
+                                    <i class="fas fa-sort text-muted opacity-50"></i>
+                                {% endif %}
+                            </a>
+                        </th>
                         <th>Status</th>
-                        <th>Data rejestracji</th>
+                        <th>
+                            <a href="?sort=date_joined&order={% if sort_by == 'date_joined' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if user_type %}&type={{ user_type }}{% endif %}{% if status %}&status={{ status }}{% endif %}" class="text-decoration-none text-dark sortable-header">
+                                Data rejestracji
+                                {% if sort_by == 'date_joined' %}
+                                    <i class="fas fa-sort-{% if sort_order == 'asc' %}up{% else %}down{% endif %} text-primary"></i>
+                                {% else %}
+                                    <i class="fas fa-sort text-muted opacity-50"></i>
+                                {% endif %}
+                            </a>
+                        </th>
                         <th>Akcje</th>
                     </tr>
                 </thead>
@@ -68,16 +123,13 @@
                     {% for user_item in users %}
                     <tr>
                         <td>{{ user_item.id }}</td>
-                        <td>
-                            {{ user_item.username }}
-                            {% if user_item.is_superuser %}
-                                <span class="badge bg-danger">Superadmin</span>
-                            {% endif %}
-                        </td>
+                        <td>{{ user_item.username }}</td>
                         <td>{{ user_item.first_name }} {{ user_item.last_name }}</td>
                         <td>{{ user_item.email }}</td>
                         <td>
-                            {% if user_item.user_type == 'patient' %}
+                            {% if user_item.is_superuser %}
+                                <span class="badge bg-danger">Superadmin</span>
+                            {% elif user_item.user_type == 'patient' %}
                                 <span class="badge bg-success">Pacjent</span>
                             {% elif user_item.user_type == 'doctor' %}
                                 <span class="badge bg-info">Lekarz</span>
@@ -110,4 +162,30 @@
         </div>
     </div>
 </div>
+
+<style>
+/* Sortable header styles */
+.sortable-header {
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.15s ease-in-out;
+}
+
+.sortable-header:hover {
+    color: var(--bs-primary) !important;
+}
+
+.sortable-header i {
+    font-size: 0.85em;
+    margin-left: 0.25rem;
+}
+
+.opacity-50 {
+    opacity: 0.5;
+}
+
+thead th {
+    white-space: nowrap;
+}
+</style>
 {% endblock %}

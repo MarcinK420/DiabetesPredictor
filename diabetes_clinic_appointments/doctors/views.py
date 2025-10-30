@@ -122,10 +122,33 @@ def patients_list(request):
     from appointments.models import Appointment
     from patients.models import Patient
 
+    # Get sort parameters
+    sort_by = request.GET.get('sort', 'name')
+    sort_order = request.GET.get('order', 'asc')
+
+    # Get filter parameters
+    diabetes_filter = request.GET.get('diabetes_type', '')
+    appointment_status_filter = request.GET.get('appointment_status', '')
+    search_query = request.GET.get('search', '')
+
     # Get unique patients with their appointment statistics
-    patients_with_appointments = Patient.objects.filter(
+    patients_query = Patient.objects.filter(
         appointments__doctor=doctor
-    ).annotate(
+    )
+
+    # Apply search filter
+    if search_query:
+        patients_query = patients_query.filter(
+            Q(user__first_name__icontains=search_query) |
+            Q(user__last_name__icontains=search_query) |
+            Q(user__email__icontains=search_query)
+        )
+
+    # Apply diabetes type filter
+    if diabetes_filter:
+        patients_query = patients_query.filter(diabetes_type=diabetes_filter)
+
+    patients_with_appointments = patients_query.annotate(
         total_appointments=Count('appointments', filter=Q(appointments__doctor=doctor)),
         scheduled_appointments=Count(
             'appointments',
@@ -135,7 +158,7 @@ def patients_list(request):
             'appointments',
             filter=Q(appointments__doctor=doctor, appointments__status='completed')
         )
-    ).select_related('user').distinct().order_by('user__last_name', 'user__first_name')
+    ).select_related('user').distinct()
 
     # Get last and next appointments for each patient
     patients_data = []
@@ -153,14 +176,40 @@ def patients_list(request):
             appointment_date__gte=timezone.now()
         ).order_by('appointment_date').first()
 
-        patients_data.append({
+        patient_info = {
             'patient': patient,
             'total_appointments': patient.total_appointments,
             'scheduled_appointments': patient.scheduled_appointments,
             'completed_appointments': patient.completed_appointments,
             'last_appointment': last_appointment,
             'next_appointment': next_appointment,
-        })
+        }
+
+        # Apply appointment status filter
+        if appointment_status_filter == 'with_upcoming':
+            if patient.scheduled_appointments > 0:
+                patients_data.append(patient_info)
+        elif appointment_status_filter == 'without_upcoming':
+            if patient.scheduled_appointments == 0:
+                patients_data.append(patient_info)
+        else:
+            patients_data.append(patient_info)
+
+    # Apply sorting to patients_data
+    reverse = (sort_order == 'desc')
+
+    if sort_by == 'name':
+        patients_data.sort(key=lambda x: (x['patient'].user.last_name.lower(), x['patient'].user.first_name.lower()), reverse=reverse)
+    elif sort_by == 'email':
+        patients_data.sort(key=lambda x: x['patient'].user.email.lower(), reverse=reverse)
+    elif sort_by == 'diabetes_type':
+        patients_data.sort(key=lambda x: x['patient'].diabetes_type or '', reverse=reverse)
+    elif sort_by == 'total_appointments':
+        patients_data.sort(key=lambda x: x['total_appointments'], reverse=reverse)
+    elif sort_by == 'last_appointment':
+        patients_data.sort(key=lambda x: (x['last_appointment'].appointment_date if x['last_appointment'] else timezone.datetime.min.replace(tzinfo=timezone.get_current_timezone())), reverse=reverse)
+    elif sort_by == 'next_appointment':
+        patients_data.sort(key=lambda x: (x['next_appointment'].appointment_date if x['next_appointment'] else timezone.datetime.max.replace(tzinfo=timezone.get_current_timezone())), reverse=reverse)
 
     # Pagination
     paginator = Paginator(patients_data, 10)  # 10 patients per page
@@ -171,11 +220,26 @@ def patients_list(request):
     total_patients = len(patients_data)
     patients_with_scheduled = sum(1 for p in patients_data if p['scheduled_appointments'] > 0)
 
+    # Build filter params string for pagination and sorting
+    filter_params = ''
+    if search_query:
+        filter_params += f'&search={search_query}'
+    if diabetes_filter:
+        filter_params += f'&diabetes_type={diabetes_filter}'
+    if appointment_status_filter:
+        filter_params += f'&appointment_status={appointment_status_filter}'
+
     context = {
         'doctor': doctor,
         'page_obj': page_obj,
         'total_patients': total_patients,
         'patients_with_scheduled': patients_with_scheduled,
+        'sort_by': sort_by,
+        'sort_order': sort_order,
+        'search_query': search_query,
+        'diabetes_filter': diabetes_filter,
+        'appointment_status_filter': appointment_status_filter,
+        'filter_params': filter_params,
     }
 
     return render(request, 'doctors/patients_list.html', context)
@@ -204,11 +268,34 @@ def patient_detail(request, patient_id):
     if not has_access:
         raise Http404("Nie masz uprawnień do przeglądania tej karty pacjenta.")
 
+    # Get sort parameters
+    sort_by = request.GET.get('sort', 'date')
+    sort_order = request.GET.get('order', 'desc')
+
+    # Get filter parameters
+    status_filter = request.GET.get('status', '')
+
     # Get appointment history for this patient-doctor combination
     appointments_history = Appointment.objects.filter(
         doctor=doctor,
         patient=patient
-    ).order_by('-appointment_date')
+    )
+
+    # Apply filter
+    if status_filter:
+        appointments_history = appointments_history.filter(status=status_filter)
+
+    # Apply sorting
+    order_prefix = '-' if sort_order == 'desc' else ''
+
+    if sort_by == 'date':
+        appointments_history = appointments_history.order_by(f'{order_prefix}appointment_date')
+    elif sort_by == 'status':
+        appointments_history = appointments_history.order_by(f'{order_prefix}status')
+    elif sort_by == 'reason':
+        appointments_history = appointments_history.order_by(f'{order_prefix}reason')
+    else:
+        appointments_history = appointments_history.order_by('-appointment_date')
 
     # Paginate appointment history
     paginator = Paginator(appointments_history, 10)  # 10 appointments per page
@@ -239,6 +326,11 @@ def patient_detail(request, patient_id):
         'no_show': appointments_history.filter(status='no_show'),
     }
 
+    # Build filter params string for pagination and sorting
+    filter_params = ''
+    if status_filter:
+        filter_params += f'&status={status_filter}'
+
     context = {
         'doctor': doctor,
         'patient': patient,
@@ -250,6 +342,10 @@ def patient_detail(request, patient_id):
         'last_appointment': last_appointment,
         'next_appointment': next_appointment,
         'appointments_by_status': appointments_by_status,
+        'sort_by': sort_by,
+        'sort_order': sort_order,
+        'status_filter': status_filter,
+        'filter_params': filter_params,
     }
 
     return render(request, 'doctors/patient_detail.html', context)
