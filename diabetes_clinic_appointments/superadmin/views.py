@@ -51,7 +51,10 @@ def user_list(request):
         )
 
     if user_type:
-        users = users.filter(user_type=user_type)
+        if user_type == 'superadmin':
+            users = users.filter(is_superuser=True)
+        else:
+            users = users.filter(user_type=user_type)
 
     if status == 'active':
         users = users.filter(is_active=True, account_locked_until__isnull=True)

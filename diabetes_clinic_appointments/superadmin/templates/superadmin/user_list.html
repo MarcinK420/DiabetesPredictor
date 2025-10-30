@@ -25,6 +25,7 @@
                     <option value="">Wszystkie</option>
                     <option value="patient" {% if user_type == 'patient' %}selected{% endif %}>Pacjent</option>
                     <option value="doctor" {% if user_type == 'doctor' %}selected{% endif %}>Lekarz</option>
+                    <option value="superadmin" {% if user_type == 'superadmin' %}selected{% endif %}>Superadmin</option>
                 </select>
             </div>
             <div class="col-md-3">
@@ -122,16 +123,13 @@
                     {% for user_item in users %}
                     <tr>
                         <td>{{ user_item.id }}</td>
-                        <td>
-                            {{ user_item.username }}
-                            {% if user_item.is_superuser %}
-                                <span class="badge bg-danger">Superadmin</span>
-                            {% endif %}
-                        </td>
+                        <td>{{ user_item.username }}</td>
                         <td>{{ user_item.first_name }} {{ user_item.last_name }}</td>
                         <td>{{ user_item.email }}</td>
                         <td>
-                            {% if user_item.user_type == 'patient' %}
+                            {% if user_item.is_superuser %}
+                                <span class="badge bg-danger">Superadmin</span>
+                            {% elif user_item.user_type == 'patient' %}
                                 <span class="badge bg-success">Pacjent</span>
                             {% elif user_item.user_type == 'doctor' %}
                                 <span class="badge bg-info">Lekarz</span>
