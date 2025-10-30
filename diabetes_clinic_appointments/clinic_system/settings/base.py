@@ -42,6 +42,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # Third-party apps
     'corsheaders',
+    'ckeditor',
+    'ckeditor_uploader',
     # Project apps
     'authentication',
     'patients',
@@ -133,3 +135,43 @@ AUTH_USER_MODEL = 'authentication.User'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/auth/login/'
 LOGIN_URL = '/auth/login/'
+
+# CKEditor Configuration
+CKEDITOR_UPLOAD_PATH = "uploads/"
+CKEDITOR_IMAGE_BACKEND = "pillow"
+CKEDITOR_JQUERY_URL = 'https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js'
+
+CKEDITOR_CONFIGS = {
+    'default': {
+        'toolbar': 'Custom',
+        'toolbar_Custom': [
+            ['Bold', 'Italic', 'Underline', 'Strike'],
+            ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', '-', 'JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock'],
+            ['Link', 'Unlink'],
+            ['RemoveFormat', 'Source'],
+            ['TextColor', 'BGColor'],
+            ['Table'],
+            ['Undo', 'Redo'],
+        ],
+        'height': 300,
+        'width': '100%',
+    },
+    'doctor_notes': {
+        'toolbar': 'Custom',
+        'toolbar_Custom': [
+            ['Bold', 'Italic', 'Underline'],
+            ['NumberedList', 'BulletedList'],
+            ['TextColor', 'BGColor'],
+            ['Table'],
+            ['RemoveFormat'],
+        ],
+        'height': 400,
+        'width': '100%',
+        'removePlugins': 'elementspath',
+        'resize_enabled': False,
+    },
+}
+
+# Media files (for CKEditor uploads)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'

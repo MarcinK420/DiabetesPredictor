@@ -269,7 +269,10 @@
                                 <p class="mb-1"><strong>{{ last_appointment.appointment_date|time:"H:i" }}</strong></p>
                                 <small class="text-muted">{{ last_appointment.reason }}</small>
                                 {% if last_appointment.notes %}
-                                    <p class="mt-2 mb-0"><small><strong>Notatki:</strong> {{ last_appointment.notes|truncatechars:100 }}</small></p>
+                                    <div class="mt-2">
+                                        <small><strong>Notatki:</strong></small>
+                                        <div class="small">{{ last_appointment.notes|striptags|truncatechars:100 }}</div>
+                                    </div>
                                 {% endif %}
                             </div>
                         </div>
@@ -365,17 +368,26 @@
                                             <td>{{ appointment.reason|truncatechars:40 }}</td>
                                             <td>
                                                 {% if appointment.notes %}
-                                                    <span class="text-muted">{{ appointment.notes|truncatechars:50 }}</span>
+                                                    <span class="text-muted">{{ appointment.notes|striptags|truncatechars:50 }}</span>
                                                 {% else %}
                                                     <small class="text-muted"><i>Brak notatek</i></small>
                                                 {% endif %}
                                             </td>
                                             <td class="text-center">
-                                                {% if appointment.status == 'completed' %}
-                                                    <button type="button" class="btn btn-sm btn-outline-success" title="Dodaj wyniki" disabled>
-                                                        <i class="fas fa-plus"></i>
-                                                    </button>
-                                                {% endif %}
+                                                <div class="btn-group" role="group">
+                                                    {% if appointment.notes %}
+                                                        <a href="{% url 'doctors:view_appointment_notes' appointment.id %}"
+                                                           class="btn btn-sm btn-info"
+                                                           title="Podgląd notatek">
+                                                            <i class="fas fa-eye"></i> Podgląd
+                                                        </a>
+                                                    {% endif %}
+                                                    <a href="{% url 'doctors:edit_appointment_notes' appointment.id %}"
+                                                       class="btn btn-sm btn-primary"
+                                                       title="Edytuj notatki z wizyty">
+                                                        <i class="fas fa-edit"></i> {% if appointment.notes %}Edytuj{% else %}Dodaj{% endif %}
+                                                    </a>
+                                                </div>
                                             </td>
                                         </tr>
                                     {% endfor %}

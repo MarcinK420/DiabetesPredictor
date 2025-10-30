@@ -1,9 +1,11 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from django.utils import timezone
 from django.core.paginator import Paginator
 from django.db.models import Count, Q
-from django.http import Http404
+from django.http import Http404, JsonResponse, FileResponse, HttpResponseForbidden
+from .forms import AppointmentNotesForm, AppointmentAttachmentForm, NoteTemplateForm
 
 @login_required
 def dashboard(request):
@@ -251,3 +253,319 @@ def patient_detail(request, patient_id):
     }
 
     return render(request, 'doctors/patient_detail.html', context)
+
+
+@login_required
+def edit_appointment_notes(request, appointment_id):
+    """Widok dla lekarza do edycji notatek z wizyty"""
+    if not request.user.is_doctor():
+        return redirect('authentication:login')
+
+    doctor = request.user.doctor_profile
+
+    # Get appointment and verify doctor has access
+    from appointments.models import Appointment, AppointmentAttachment
+
+    appointment = get_object_or_404(Appointment, id=appointment_id)
+
+    # Verify this appointment belongs to this doctor
+    if appointment.doctor != doctor:
+        raise Http404("Nie masz uprawnień do edycji tej wizyty.")
+
+    # Handle file upload form submission
+    if request.method == 'POST' and 'upload_attachment' in request.POST:
+        attachment_form = AppointmentAttachmentForm(request.POST, request.FILES)
+        if attachment_form.is_valid():
+            attachment = attachment_form.save(commit=False)
+            attachment.appointment = appointment
+            attachment.uploaded_by = doctor
+            attachment.save()
+            messages.success(request, f'Załącznik "{attachment.filename}" został dodany pomyślnie!')
+            return redirect(request.path + f'?return_to={request.GET.get("return_to", "patient_detail")}')
+        else:
+            messages.error(request, 'Błąd podczas przesyłania załącznika.')
+
+    # Handle notes form submission
+    elif request.method == 'POST':
+        form = AppointmentNotesForm(request.POST, instance=appointment)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Notatki zostały zapisane pomyślnie!')
+
+            # Check if there's a return_to parameter
+            return_to = request.GET.get('return_to', 'patient_detail')
+            if return_to == 'upcoming':
+                return redirect('doctors:upcoming_appointments')
+            else:
+                return redirect('doctors:patient_detail', patient_id=appointment.patient.id)
+        else:
+            messages.error(request, 'Wystąpił błąd podczas zapisywania notatek.')
+
+    # GET request or form errors
+    if request.method != 'POST':
+        form = AppointmentNotesForm(instance=appointment)
+        attachment_form = AppointmentAttachmentForm()
+    else:
+        # Re-initialize forms if there were errors
+        if 'upload_attachment' not in request.POST:
+            attachment_form = AppointmentAttachmentForm()
+        else:
+            form = AppointmentNotesForm(instance=appointment)
+
+    # Get existing attachments
+    attachments = appointment.attachments.all()
+
+    # Get available note templates
+    from appointments.models import NoteTemplate
+    templates = NoteTemplate.objects.filter(is_active=True).order_by('category', 'name')
+
+    # Pass return_to parameter to template
+    return_to = request.GET.get('return_to', 'patient_detail')
+
+    context = {
+        'doctor': doctor,
+        'appointment': appointment,
+        'form': form,
+        'attachment_form': attachment_form,
+        'attachments': attachments,
+        'templates': templates,
+        'patient': appointment.patient,
+        'return_to': return_to,
+    }
+
+    return render(request, 'doctors/edit_appointment_notes.html', context)
+
+
+@login_required
+def view_appointment_notes(request, appointment_id):
+    """Widok do podglądu notatek z wizyty (read-only)"""
+    if not request.user.is_doctor():
+        return redirect('authentication:login')
+
+    doctor = request.user.doctor_profile
+
+    # Get appointment and verify doctor has access
+    from appointments.models import Appointment
+
+    appointment = get_object_or_404(Appointment, id=appointment_id)
+
+    # Verify this appointment belongs to this doctor
+    if appointment.doctor != doctor:
+        raise Http404("Nie masz uprawnień do przeglądania tej wizyty.")
+
+    # Get attachments
+    attachments = appointment.attachments.all()
+
+    context = {
+        'doctor': doctor,
+        'appointment': appointment,
+        'patient': appointment.patient,
+        'attachments': attachments,
+    }
+
+    return render(request, 'doctors/view_appointment_notes.html', context)
+
+
+@login_required
+def delete_attachment(request, attachment_id):
+    """Widok do usuwania załącznika"""
+    if not request.user.is_doctor():
+        return HttpResponseForbidden("Nie masz uprawnień do wykonania tej akcji.")
+
+    doctor = request.user.doctor_profile
+
+    from appointments.models import AppointmentAttachment
+
+    attachment = get_object_or_404(AppointmentAttachment, id=attachment_id)
+
+    # Verify doctor has access to this appointment
+    if attachment.appointment.doctor != doctor:
+        return HttpResponseForbidden("Nie masz uprawnień do usunięcia tego załącznika.")
+
+    if request.method == 'POST':
+        appointment_id = attachment.appointment.id
+        filename = attachment.filename
+
+        # Delete the file from storage
+        if attachment.file:
+            attachment.file.delete(save=False)
+
+        # Delete the database record
+        attachment.delete()
+
+        messages.success(request, f'Załącznik "{filename}" został usunięty.')
+
+        # Redirect back to notes edit page
+        return_to = request.GET.get('return_to', 'patient_detail')
+        return redirect(f'/doctors/appointment/{appointment_id}/notes/?return_to={return_to}')
+
+    # If GET request, show confirmation page
+    context = {
+        'doctor': doctor,
+        'attachment': attachment,
+        'appointment': attachment.appointment,
+    }
+    return render(request, 'doctors/confirm_delete_attachment.html', context)
+
+
+@login_required
+def download_attachment(request, attachment_id):
+    """Widok do pobierania załącznika"""
+    if not request.user.is_doctor():
+        return HttpResponseForbidden("Nie masz uprawnień do wykonania tej akcji.")
+
+    doctor = request.user.doctor_profile
+
+    from appointments.models import AppointmentAttachment
+
+    attachment = get_object_or_404(AppointmentAttachment, id=attachment_id)
+
+    # Verify doctor has access to this appointment
+    if attachment.appointment.doctor != doctor:
+        return HttpResponseForbidden("Nie masz uprawnień do pobrania tego załącznika.")
+
+    # Serve the file
+    try:
+        response = FileResponse(attachment.file.open('rb'))
+        response['Content-Type'] = 'application/octet-stream'
+        response['Content-Disposition'] = f'attachment; filename="{attachment.filename}"'
+        return response
+    except Exception as e:
+        messages.error(request, f'Błąd podczas pobierania pliku: {str(e)}')
+        return redirect('doctors:edit_appointment_notes', appointment_id=attachment.appointment.id)
+
+
+# ============================================
+# Note Templates Management Views
+# ============================================
+
+@login_required
+def list_templates(request):
+    """Lista szablonów notatek"""
+    if not request.user.is_doctor():
+        return redirect('authentication:login')
+
+    doctor = request.user.doctor_profile
+
+    from appointments.models import NoteTemplate
+
+    # Get all active templates, grouped by category
+    templates = NoteTemplate.objects.filter(is_active=True).order_by('category', 'name')
+
+    # Group templates by category
+    templates_by_category = {}
+    for template in templates:
+        category = template.get_category_display()
+        if category not in templates_by_category:
+            templates_by_category[category] = []
+        templates_by_category[category].append(template)
+
+    context = {
+        'doctor': doctor,
+        'templates_by_category': templates_by_category,
+        'total_templates': templates.count(),
+    }
+
+    return render(request, 'doctors/list_templates.html', context)
+
+
+@login_required
+def create_template(request):
+    """Tworzenie nowego szablonu notatki"""
+    if not request.user.is_doctor():
+        return redirect('authentication:login')
+
+    doctor = request.user.doctor_profile
+
+    if request.method == 'POST':
+        form = NoteTemplateForm(request.POST)
+        if form.is_valid():
+            template = form.save(commit=False)
+            template.created_by = doctor
+            template.save()
+            messages.success(request, f'Szablon "{template.name}" został utworzony.')
+            return redirect('doctors:list_templates')
+    else:
+        form = NoteTemplateForm()
+
+    context = {
+        'doctor': doctor,
+        'form': form,
+        'action': 'create',
+    }
+
+    return render(request, 'doctors/template_form.html', context)
+
+
+@login_required
+def edit_template(request, template_id):
+    """Edycja szablonu notatki"""
+    if not request.user.is_doctor():
+        return redirect('authentication:login')
+
+    doctor = request.user.doctor_profile
+
+    from appointments.models import NoteTemplate
+
+    template = get_object_or_404(NoteTemplate, id=template_id)
+
+    if request.method == 'POST':
+        form = NoteTemplateForm(request.POST, instance=template)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Szablon "{template.name}" został zaktualizowany.')
+            return redirect('doctors:list_templates')
+    else:
+        form = NoteTemplateForm(instance=template)
+
+    context = {
+        'doctor': doctor,
+        'form': form,
+        'template': template,
+        'action': 'edit',
+    }
+
+    return render(request, 'doctors/template_form.html', context)
+
+
+@login_required
+def delete_template(request, template_id):
+    """Usuwanie szablonu notatki"""
+    if not request.user.is_doctor():
+        return redirect('authentication:login')
+
+    doctor = request.user.doctor_profile
+
+    from appointments.models import NoteTemplate
+
+    template = get_object_or_404(NoteTemplate, id=template_id)
+
+    if request.method == 'POST':
+        template_name = template.name
+        template.delete()
+        messages.success(request, f'Szablon "{template_name}" został usunięty.')
+        return redirect('doctors:list_templates')
+
+    context = {
+        'doctor': doctor,
+        'template': template,
+    }
+
+    return render(request, 'doctors/confirm_delete_template.html', context)
+
+
+@login_required
+def get_template_content(request, template_id):
+    """API endpoint do pobierania treści szablonu (AJAX)"""
+    if not request.user.is_doctor():
+        return JsonResponse({'error': 'Brak uprawnień'}, status=403)
+
+    from appointments.models import NoteTemplate
+
+    template = get_object_or_404(NoteTemplate, id=template_id, is_active=True)
+
+    return JsonResponse({
+        'success': True,
+        'content': template.content,
+        'name': template.name,
+    })

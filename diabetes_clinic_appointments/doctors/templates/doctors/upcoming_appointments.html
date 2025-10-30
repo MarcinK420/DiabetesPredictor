@@ -125,16 +125,33 @@
                                                 <div class="col-9">
                                                     <h6 class="mb-1">
                                                         <i class="fas fa-user"></i>
-                                                        {{ appointment.patient.user.first_name }} {{ appointment.patient.user.last_name }}
+                                                        <a href="{% url 'doctors:patient_detail' appointment.patient.id %}">
+                                                            {{ appointment.patient.user.first_name }} {{ appointment.patient.user.last_name }}
+                                                        </a>
                                                     </h6>
                                                     <p class="mb-1">
                                                         <i class="fas fa-clipboard-list"></i>
                                                         {{ appointment.reason }}
                                                     </p>
-                                                    <small class="text-muted">
+                                                    <small class="text-muted d-block mb-2">
                                                         <i class="fas fa-phone"></i>
                                                         {{ appointment.patient.user.phone_number }}
                                                     </small>
+                                                    <div class="btn-group btn-group-sm" role="group">
+                                                        {% if appointment.notes %}
+                                                            <a href="{% url 'doctors:view_appointment_notes' appointment.id %}"
+                                                               class="btn btn-outline-info btn-sm"
+                                                               title="Podgląd notatek">
+                                                                <i class="fas fa-eye"></i> Podgląd
+                                                            </a>
+                                                        {% endif %}
+                                                        <a href="{% url 'doctors:edit_appointment_notes' appointment.id %}?return_to=upcoming"
+                                                           class="btn btn-outline-primary btn-sm"
+                                                           title="{% if appointment.notes %}Edytuj notatki{% else %}Dodaj notatki{% endif %}">
+                                                            <i class="fas fa-{% if appointment.notes %}edit{% else %}plus{% endif %}"></i>
+                                                            {% if appointment.notes %}Edytuj{% else %}Dodaj{% endif %} notatki
+                                                        </a>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -186,16 +203,33 @@
                                                             <div class="col-9">
                                                                 <h6 class="mb-1">
                                                                     <i class="fas fa-user"></i>
-                                                                    {{ appointment.patient.user.first_name }} {{ appointment.patient.user.last_name }}
+                                                                    <a href="{% url 'doctors:patient_detail' appointment.patient.id %}">
+                                                                        {{ appointment.patient.user.first_name }} {{ appointment.patient.user.last_name }}
+                                                                    </a>
                                                                 </h6>
                                                                 <p class="mb-1">
                                                                     <i class="fas fa-clipboard-list"></i>
                                                                     {{ appointment.reason }}
                                                                 </p>
-                                                                <small class="text-muted">
+                                                                <small class="text-muted d-block mb-2">
                                                                     <i class="fas fa-phone"></i>
                                                                     {{ appointment.patient.user.phone_number }}
                                                                 </small>
+                                                                <div class="btn-group btn-group-sm" role="group">
+                                                                    {% if appointment.notes %}
+                                                                        <a href="{% url 'doctors:view_appointment_notes' appointment.id %}"
+                                                                           class="btn btn-outline-info btn-sm"
+                                                                           title="Podgląd notatek">
+                                                                            <i class="fas fa-eye"></i> Podgląd
+                                                                        </a>
+                                                                    {% endif %}
+                                                                    <a href="{% url 'doctors:edit_appointment_notes' appointment.id %}?return_to=upcoming"
+                                                                       class="btn btn-outline-primary btn-sm"
+                                                                       title="{% if appointment.notes %}Edytuj notatki{% else %}Dodaj notatki{% endif %}">
+                                                                        <i class="fas fa-{% if appointment.notes %}edit{% else %}plus{% endif %}"></i>
+                                                                        {% if appointment.notes %}Edytuj{% else %}Dodaj{% endif %} notatki
+                                                                    </a>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>

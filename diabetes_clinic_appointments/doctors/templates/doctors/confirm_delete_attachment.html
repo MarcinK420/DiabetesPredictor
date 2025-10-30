@@ -1,0 +1,46 @@
+{% extends 'authentication/base.html' %}
+
+{% block title %}Potwierdzenie usunięcia załącznika - Klinika Diabetologiczna{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle"></i> Potwierdź usunięcie
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="lead">Czy na pewno chcesz usunąć ten załącznik?</p>
+
+                    <div class="alert alert-warning">
+                        <strong>Nazwa pliku:</strong> {{ attachment.filename }}<br>
+                        <strong>Typ:</strong> {{ attachment.get_file_type_display }}<br>
+                        <strong>Rozmiar:</strong> {{ attachment.file_size_mb }} MB<br>
+                        {% if attachment.description %}
+                            <strong>Opis:</strong> {{ attachment.description }}
+                        {% endif %}
+                    </div>
+
+                    <p class="text-muted">
+                        <i class="fas fa-info-circle"></i>
+                        Tej operacji nie można cofnąć. Plik zostanie permanentnie usunięty.
+                    </p>
+
+                    <form method="post" class="d-flex justify-content-between">
+                        {% csrf_token %}
+                        <a href="{% url 'doctors:edit_appointment_notes' appointment.id %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Anuluj
+                        </a>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash"></i> Tak, usuń załącznik
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

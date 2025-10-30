@@ -1,0 +1,466 @@
+{% extends 'authentication/base.html' %}
+{% load static %}
+
+{% block title %}Edycja Notatek z Wizyty - Klinika Diabetologiczna{% endblock %}
+
+{% block extra_css %}
+{{ form.media.css }}
+<style>
+    .appointment-info-card {
+        background-color: #f8f9fa;
+        border-left: 4px solid #007bff;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    .info-label {
+        font-weight: 600;
+        color: #6c757d;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .info-value {
+        font-size: 1.1rem;
+        color: #212529;
+        margin-top: 0.25rem;
+    }
+    .status-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: 500;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header with breadcrumb -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'doctors:dashboard' %}">
+                            <i class="fas fa-home"></i> Panel Lekarza
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'doctors:patients_list' %}">
+                            <i class="fas fa-users"></i> Spis Pacjentów
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'doctors:patient_detail' patient.id %}">
+                            {{ patient.user.first_name }} {{ patient.user.last_name }}
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item active" aria-current="page">Edycja Notatek</li>
+                </ol>
+            </nav>
+
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="display-6 mb-2">
+                        <i class="fas fa-notes-medical text-primary"></i>
+                        Notatki z Wizyty
+                    </h1>
+                    <p class="text-muted mb-0">Edytuj notatki dla pacjenta: {{ patient.user.first_name }} {{ patient.user.last_name }}</p>
+                </div>
+                <div>
+                    {% if return_to == 'upcoming' %}
+                        <a href="{% url 'doctors:upcoming_appointments' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left"></i> Powrót do Wizyt
+                        </a>
+                    {% else %}
+                        <a href="{% url 'doctors:patient_detail' patient.id %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left"></i> Powrót
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Messages -->
+    {% if messages %}
+        <div class="row mb-4">
+            <div class="col-12">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Appointment Information Card -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="appointment-info-card">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="info-label">Data wizyty</div>
+                        <div class="info-value">
+                            <i class="fas fa-calendar-alt text-primary"></i>
+                            {{ appointment.appointment_date|date:"d.m.Y" }}
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="info-label">Godzina</div>
+                        <div class="info-value">
+                            <i class="fas fa-clock text-primary"></i>
+                            {{ appointment.appointment_date|date:"H:i" }}
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="info-label">Powód wizyty</div>
+                        <div class="info-value">
+                            <i class="fas fa-file-medical text-primary"></i>
+                            {{ appointment.reason }}
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="info-label">Status</div>
+                        <div class="info-value">
+                            {% if appointment.status == 'scheduled' %}
+                                <span class="badge bg-primary status-badge">
+                                    <i class="fas fa-calendar-check"></i> Zaplanowana
+                                </span>
+                            {% elif appointment.status == 'completed' %}
+                                <span class="badge bg-success status-badge">
+                                    <i class="fas fa-check-circle"></i> Zakończona
+                                </span>
+                            {% elif appointment.status == 'cancelled' %}
+                                <span class="badge bg-danger status-badge">
+                                    <i class="fas fa-times-circle"></i> Anulowana
+                                </span>
+                            {% elif appointment.status == 'no_show' %}
+                                <span class="badge bg-warning status-badge">
+                                    <i class="fas fa-exclamation-triangle"></i> Niestawiennictwo
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notes Form -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-edit"></i> Formularz Notatek
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="notes-form">
+                        {% csrf_token %}
+
+                        <!-- Status Field -->
+                        <div class="mb-4">
+                            <label for="{{ form.status.id_for_label }}" class="form-label">
+                                <i class="fas fa-info-circle"></i> {{ form.status.label }}
+                            </label>
+                            {{ form.status }}
+                            <div class="form-text">{{ form.status.help_text }}</div>
+                            {% if form.status.errors %}
+                                <div class="alert alert-danger mt-2">
+                                    {{ form.status.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Template Selector -->
+                        {% if templates %}
+                        <div class="mb-4">
+                            <label class="form-label">
+                                <i class="fas fa-file-alt"></i> Użyj szablonu
+                            </label>
+                            <div class="d-flex gap-2">
+                                <select id="template-selector" class="form-control">
+                                    <option value="">-- Wybierz szablon --</option>
+                                    {% for template in templates %}
+                                        <option value="{{ template.id }}" data-template-name="{{ template.name }}">
+                                            {{ template.name }} ({{ template.get_category_display }})
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <button type="button" class="btn btn-outline-primary" id="load-template-btn">
+                                    <i class="fas fa-download"></i> Wczytaj
+                                </button>
+                                <a href="{% url 'doctors:list_templates' %}" class="btn btn-outline-secondary" title="Zarządzaj szablonami">
+                                    <i class="fas fa-cog"></i>
+                                </a>
+                            </div>
+                            <div class="form-text">
+                                Wybierz szablon, aby automatycznie wypełnić notatkę typową strukturą.
+                                <strong>Uwaga:</strong> Obecna treść notatki zostanie zastąpiona.
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Notes Field with CKEditor -->
+                        <div class="mb-4">
+                            <label for="{{ form.notes.id_for_label }}" class="form-label">
+                                <i class="fas fa-notes-medical"></i> {{ form.notes.label }}
+                            </label>
+                            {{ form.notes }}
+                            <div class="form-text">{{ form.notes.help_text }}</div>
+                            {% if form.notes.errors %}
+                                <div class="alert alert-danger mt-2">
+                                    {{ form.notes.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-between align-items-center">
+                            {% if return_to == 'upcoming' %}
+                                <a href="{% url 'doctors:upcoming_appointments' %}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Anuluj
+                                </a>
+                            {% else %}
+                                <a href="{% url 'doctors:patient_detail' patient.id %}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Anuluj
+                                </a>
+                            {% endif %}
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-save"></i> Zapisz Notatki
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attachments Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-paperclip"></i> Załączniki
+                        <span class="badge bg-light text-success ms-2">{{ attachments|length }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Upload Form -->
+                    <div class="border-bottom pb-3 mb-3">
+                        <h6 class="text-muted mb-3">
+                            <i class="fas fa-upload"></i> Dodaj nowy załącznik
+                        </h6>
+                        <form method="post" enctype="multipart/form-data" class="row g-3">
+                            {% csrf_token %}
+                            <div class="col-md-4">
+                                <label for="{{ attachment_form.file.id_for_label }}" class="form-label">
+                                    {{ attachment_form.file.label }}
+                                </label>
+                                {{ attachment_form.file }}
+                                <div class="form-text">{{ attachment_form.file.help_text }}</div>
+                                {% if attachment_form.file.errors %}
+                                    <div class="alert alert-danger mt-2 p-2">
+                                        {{ attachment_form.file.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-3">
+                                <label for="{{ attachment_form.file_type.id_for_label }}" class="form-label">
+                                    {{ attachment_form.file_type.label }}
+                                </label>
+                                {{ attachment_form.file_type }}
+                            </div>
+                            <div class="col-md-3">
+                                <label for="{{ attachment_form.description.id_for_label }}" class="form-label">
+                                    {{ attachment_form.description.label }}
+                                </label>
+                                {{ attachment_form.description }}
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button type="submit" name="upload_attachment" class="btn btn-success w-100">
+                                    <i class="fas fa-upload"></i> Upload
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Existing Attachments List -->
+                    {% if attachments %}
+                        <h6 class="text-muted mb-3">
+                            <i class="fas fa-folder-open"></i> Istniejące załączniki
+                        </h6>
+                        <div class="row">
+                            {% for attachment in attachments %}
+                                <div class="col-md-6 col-lg-4 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-body">
+                                            <!-- File Icon/Preview -->
+                                            <div class="text-center mb-2">
+                                                {% if attachment.is_image %}
+                                                    <img src="{{ attachment.file.url }}" alt="{{ attachment.filename }}"
+                                                         class="img-thumbnail" style="max-height: 150px; max-width: 100%;">
+                                                {% elif attachment.is_pdf %}
+                                                    <i class="fas fa-file-pdf fa-4x text-danger"></i>
+                                                {% else %}
+                                                    <i class="fas fa-file fa-4x text-secondary"></i>
+                                                {% endif %}
+                                            </div>
+
+                                            <!-- File Info -->
+                                            <h6 class="card-title text-truncate" title="{{ attachment.filename }}">
+                                                {{ attachment.filename }}
+                                            </h6>
+                                            <p class="card-text small">
+                                                <span class="badge bg-info">{{ attachment.get_file_type_display }}</span>
+                                                <span class="badge bg-secondary">{{ attachment.file_size_mb }} MB</span>
+                                            </p>
+                                            {% if attachment.description %}
+                                                <p class="card-text small text-muted">{{ attachment.description|truncatechars:50 }}</p>
+                                            {% endif %}
+                                            <p class="card-text">
+                                                <small class="text-muted">
+                                                    Dodano: {{ attachment.uploaded_at|date:"d.m.Y H:i" }}<br>
+                                                    przez: Dr. {{ attachment.uploaded_by.user.last_name }}
+                                                </small>
+                                            </p>
+
+                                            <!-- Actions -->
+                                            <div class="btn-group btn-group-sm w-100" role="group">
+                                                <a href="{% url 'doctors:download_attachment' attachment.id %}"
+                                                   class="btn btn-outline-primary"
+                                                   title="Pobierz">
+                                                    <i class="fas fa-download"></i>
+                                                </a>
+                                                <a href="{% url 'doctors:delete_attachment' attachment.id %}?return_to={{ return_to }}"
+                                                   class="btn btn-outline-danger"
+                                                   title="Usuń">
+                                                    <i class="fas fa-trash"></i>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            Brak załączników. Dodaj pierwszy załącznik używając formularza powyżej.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <h6 class="alert-heading">
+                    <i class="fas fa-info-circle"></i> Wskazówki dotyczące notatek
+                </h6>
+                <ul class="mb-0">
+                    <li>Używaj pogrubienia dla najważniejszych informacji</li>
+                    <li>Twórz listy punktowe dla przejrzystości</li>
+                    <li>Korzystaj z tabel do prezentacji wyników badań</li>
+                    <li>Koloruj tekst aby wyróżnić istotne informacje (np. czerwony dla alergii)</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ form.media.js }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('CKEditor form loaded');
+
+        // Template loader functionality
+        const templateSelector = document.getElementById('template-selector');
+        const loadTemplateBtn = document.getElementById('load-template-btn');
+
+        if (templateSelector && loadTemplateBtn) {
+            loadTemplateBtn.addEventListener('click', function() {
+                const selectedOption = templateSelector.options[templateSelector.selectedIndex];
+                const templateId = selectedOption.value;
+
+                if (!templateId) {
+                    alert('Proszę wybrać szablon z listy.');
+                    return;
+                }
+
+                const templateName = selectedOption.getAttribute('data-template-name');
+
+                // Confirm before replacing current content
+                if (CKEDITOR.instances['id_notes'] && CKEDITOR.instances['id_notes'].getData().trim() !== '') {
+                    if (!confirm('Obecna treść notatki zostanie zastąpiona szablonem "' + templateName + '". Kontynuować?')) {
+                        return;
+                    }
+                }
+
+                // Disable button and show loading
+                loadTemplateBtn.disabled = true;
+                loadTemplateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Ładowanie...';
+
+                // Fetch template content via AJAX
+                fetch('/doctors/templates/' + templateId + '/content/')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Błąd pobierania szablonu');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success && CKEDITOR.instances['id_notes']) {
+                            // Set the template content in CKEditor
+                            CKEDITOR.instances['id_notes'].setData(data.content);
+
+                            // Show success message
+                            const alertDiv = document.createElement('div');
+                            alertDiv.className = 'alert alert-success alert-dismissible fade show';
+                            alertDiv.setAttribute('role', 'alert');
+                            alertDiv.innerHTML = `
+                                <i class="fas fa-check-circle"></i> Szablon "${templateName}" został wczytany pomyślnie!
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            `;
+
+                            // Insert alert before the form
+                            const form = document.getElementById('notes-form');
+                            form.parentElement.insertBefore(alertDiv, form);
+
+                            // Auto-dismiss after 3 seconds
+                            setTimeout(function() {
+                                alertDiv.classList.remove('show');
+                                setTimeout(function() {
+                                    alertDiv.remove();
+                                }, 150);
+                            }, 3000);
+
+                            // Reset selector
+                            templateSelector.selectedIndex = 0;
+                        } else {
+                            throw new Error('Nieprawidłowa odpowiedź serwera');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error loading template:', error);
+                        alert('Błąd podczas ładowania szablonu: ' + error.message);
+                    })
+                    .finally(() => {
+                        // Re-enable button
+                        loadTemplateBtn.disabled = false;
+                        loadTemplateBtn.innerHTML = '<i class="fas fa-download"></i> Wczytaj';
+                    });
+            });
+        }
+    });
+</script>
+{% endblock %}

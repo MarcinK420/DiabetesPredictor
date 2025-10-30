@@ -1,0 +1,127 @@
+{% extends 'authentication/base.html' %}
+
+{% block title %}Szablony Notatek - Klinika Diabetologiczna{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="display-6 mb-2"><i class="fas fa-file-alt"></i> Szablony Notatek</h1>
+                    <p class="text-muted mb-0">Zarządzaj szablonami notatek dla typowych przypadków</p>
+                </div>
+                <div>
+                    <a href="{% url 'doctors:create_template' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Nowy szablon
+                    </a>
+                    <a href="{% url 'doctors:dashboard' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Powrót
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Messages -->
+    {% if messages %}
+        <div class="row mb-4">
+            <div class="col-12">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Templates List -->
+    <div class="row">
+        <div class="col-12">
+            {% if templates_by_category %}
+                {% for category, templates in templates_by_category.items %}
+                    <div class="card mb-4 shadow-sm">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0"><i class="fas fa-folder"></i> {{ category }}</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Nazwa</th>
+                                            <th>Opis</th>
+                                            <th>Utworzony przez</th>
+                                            <th>Data utworzenia</th>
+                                            <th>Akcje</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for template in templates %}
+                                            <tr>
+                                                <td>
+                                                    <strong>{{ template.name }}</strong>
+                                                </td>
+                                                <td>
+                                                    {{ template.description|truncatewords:15|default:"—" }}
+                                                </td>
+                                                <td>
+                                                    {% if template.created_by %}
+                                                        Dr. {{ template.created_by.user.last_name }}
+                                                    {% else %}
+                                                        System
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    {{ template.created_at|date:"d.m.Y" }}
+                                                </td>
+                                                <td>
+                                                    <div class="btn-group" role="group">
+                                                        <a href="{% url 'doctors:edit_template' template.id %}"
+                                                           class="btn btn-sm btn-outline-primary"
+                                                           title="Edytuj">
+                                                            <i class="fas fa-edit"></i>
+                                                        </a>
+                                                        <a href="{% url 'doctors:delete_template' template.id %}"
+                                                           class="btn btn-sm btn-outline-danger"
+                                                           title="Usuń">
+                                                            <i class="fas fa-trash"></i>
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    Nie ma jeszcze żadnych szablonów.
+                    <a href="{% url 'doctors:create_template' %}" class="alert-link">Utwórz pierwszy szablon</a>.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <p class="mb-0">
+                        <i class="fas fa-info-circle"></i>
+                        Łącznie: <strong>{{ total_templates }}</strong> aktywnych szablonów
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
