@@ -4,8 +4,8 @@ from django.contrib import messages
 from django.utils import timezone
 from django.core.paginator import Paginator
 from django.db.models import Count, Q
-from django.http import Http404
-from .forms import AppointmentNotesForm
+from django.http import Http404, JsonResponse, FileResponse, HttpResponseForbidden
+from .forms import AppointmentNotesForm, AppointmentAttachmentForm
 
 @login_required
 def dashboard(request):
@@ -264,7 +264,7 @@ def edit_appointment_notes(request, appointment_id):
     doctor = request.user.doctor_profile
 
     # Get appointment and verify doctor has access
-    from appointments.models import Appointment
+    from appointments.models import Appointment, AppointmentAttachment
 
     appointment = get_object_or_404(Appointment, id=appointment_id)
 
@@ -272,7 +272,21 @@ def edit_appointment_notes(request, appointment_id):
     if appointment.doctor != doctor:
         raise Http404("Nie masz uprawnień do edycji tej wizyty.")
 
-    if request.method == 'POST':
+    # Handle file upload form submission
+    if request.method == 'POST' and 'upload_attachment' in request.POST:
+        attachment_form = AppointmentAttachmentForm(request.POST, request.FILES)
+        if attachment_form.is_valid():
+            attachment = attachment_form.save(commit=False)
+            attachment.appointment = appointment
+            attachment.uploaded_by = doctor
+            attachment.save()
+            messages.success(request, f'Załącznik "{attachment.filename}" został dodany pomyślnie!')
+            return redirect(request.path + f'?return_to={request.GET.get("return_to", "patient_detail")}')
+        else:
+            messages.error(request, 'Błąd podczas przesyłania załącznika.')
+
+    # Handle notes form submission
+    elif request.method == 'POST':
         form = AppointmentNotesForm(request.POST, instance=appointment)
         if form.is_valid():
             form.save()
@@ -286,8 +300,20 @@ def edit_appointment_notes(request, appointment_id):
                 return redirect('doctors:patient_detail', patient_id=appointment.patient.id)
         else:
             messages.error(request, 'Wystąpił błąd podczas zapisywania notatek.')
-    else:
+
+    # GET request or form errors
+    if request.method != 'POST':
         form = AppointmentNotesForm(instance=appointment)
+        attachment_form = AppointmentAttachmentForm()
+    else:
+        # Re-initialize forms if there were errors
+        if 'upload_attachment' not in request.POST:
+            attachment_form = AppointmentAttachmentForm()
+        else:
+            form = AppointmentNotesForm(instance=appointment)
+
+    # Get existing attachments
+    attachments = appointment.attachments.all()
 
     # Pass return_to parameter to template
     return_to = request.GET.get('return_to', 'patient_detail')
@@ -296,6 +322,8 @@ def edit_appointment_notes(request, appointment_id):
         'doctor': doctor,
         'appointment': appointment,
         'form': form,
+        'attachment_form': attachment_form,
+        'attachments': attachments,
         'patient': appointment.patient,
         'return_to': return_to,
     }
@@ -327,3 +355,72 @@ def view_appointment_notes(request, appointment_id):
     }
 
     return render(request, 'doctors/view_appointment_notes.html', context)
+
+
+@login_required
+def delete_attachment(request, attachment_id):
+    """Widok do usuwania załącznika"""
+    if not request.user.is_doctor():
+        return HttpResponseForbidden("Nie masz uprawnień do wykonania tej akcji.")
+
+    doctor = request.user.doctor_profile
+
+    from appointments.models import AppointmentAttachment
+
+    attachment = get_object_or_404(AppointmentAttachment, id=attachment_id)
+
+    # Verify doctor has access to this appointment
+    if attachment.appointment.doctor != doctor:
+        return HttpResponseForbidden("Nie masz uprawnień do usunięcia tego załącznika.")
+
+    if request.method == 'POST':
+        appointment_id = attachment.appointment.id
+        filename = attachment.filename
+
+        # Delete the file from storage
+        if attachment.file:
+            attachment.file.delete(save=False)
+
+        # Delete the database record
+        attachment.delete()
+
+        messages.success(request, f'Załącznik "{filename}" został usunięty.')
+
+        # Redirect back to notes edit page
+        return_to = request.GET.get('return_to', 'patient_detail')
+        return redirect(f'/doctors/appointment/{appointment_id}/notes/?return_to={return_to}')
+
+    # If GET request, show confirmation page
+    context = {
+        'doctor': doctor,
+        'attachment': attachment,
+        'appointment': attachment.appointment,
+    }
+    return render(request, 'doctors/confirm_delete_attachment.html', context)
+
+
+@login_required
+def download_attachment(request, attachment_id):
+    """Widok do pobierania załącznika"""
+    if not request.user.is_doctor():
+        return HttpResponseForbidden("Nie masz uprawnień do wykonania tej akcji.")
+
+    doctor = request.user.doctor_profile
+
+    from appointments.models import AppointmentAttachment
+
+    attachment = get_object_or_404(AppointmentAttachment, id=attachment_id)
+
+    # Verify doctor has access to this appointment
+    if attachment.appointment.doctor != doctor:
+        return HttpResponseForbidden("Nie masz uprawnień do pobrania tego załącznika.")
+
+    # Serve the file
+    try:
+        response = FileResponse(attachment.file.open('rb'))
+        response['Content-Type'] = 'application/octet-stream'
+        response['Content-Disposition'] = f'attachment; filename="{attachment.filename}"'
+        return response
+    except Exception as e:
+        messages.error(request, f'Błąd podczas pobierania pliku: {str(e)}')
+        return redirect('doctors:edit_appointment_notes', appointment_id=attachment.appointment.id)
