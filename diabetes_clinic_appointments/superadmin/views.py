@@ -37,8 +37,10 @@ def user_list(request):
     search_query = request.GET.get('search', '')
     user_type = request.GET.get('type', '')
     status = request.GET.get('status', '')
+    sort_by = request.GET.get('sort', 'date_joined')
+    sort_order = request.GET.get('order', 'desc')
 
-    users = User.objects.all().order_by('-date_joined')
+    users = User.objects.all()
 
     if search_query:
         users = users.filter(
@@ -58,11 +60,31 @@ def user_list(request):
     elif status == 'locked':
         users = users.filter(account_locked_until__isnull=False, account_locked_until__gt=timezone.now())
 
+    # Apply sorting
+    order_prefix = '-' if sort_order == 'desc' else ''
+
+    if sort_by == 'id':
+        users = users.order_by(f'{order_prefix}id')
+    elif sort_by == 'username':
+        users = users.order_by(f'{order_prefix}username')
+    elif sort_by == 'name':
+        users = users.order_by(f'{order_prefix}last_name', f'{order_prefix}first_name')
+    elif sort_by == 'email':
+        users = users.order_by(f'{order_prefix}email')
+    elif sort_by == 'user_type':
+        users = users.order_by(f'{order_prefix}user_type')
+    elif sort_by == 'date_joined':
+        users = users.order_by(f'{order_prefix}date_joined')
+    else:
+        users = users.order_by('-date_joined')
+
     context = {
         'users': users,
         'search_query': search_query,
         'user_type': user_type,
         'status': status,
+        'sort_by': sort_by,
+        'sort_order': sort_order,
     }
     return render(request, 'superadmin/user_list.html', context)
 

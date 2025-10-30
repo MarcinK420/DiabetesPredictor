@@ -122,6 +122,10 @@ def patients_list(request):
     from appointments.models import Appointment
     from patients.models import Patient
 
+    # Get sort parameters
+    sort_by = request.GET.get('sort', 'name')
+    sort_order = request.GET.get('order', 'asc')
+
     # Get unique patients with their appointment statistics
     patients_with_appointments = Patient.objects.filter(
         appointments__doctor=doctor
@@ -135,7 +139,7 @@ def patients_list(request):
             'appointments',
             filter=Q(appointments__doctor=doctor, appointments__status='completed')
         )
-    ).select_related('user').distinct().order_by('user__last_name', 'user__first_name')
+    ).select_related('user').distinct()
 
     # Get last and next appointments for each patient
     patients_data = []
@@ -162,6 +166,22 @@ def patients_list(request):
             'next_appointment': next_appointment,
         })
 
+    # Apply sorting to patients_data
+    reverse = (sort_order == 'desc')
+
+    if sort_by == 'name':
+        patients_data.sort(key=lambda x: (x['patient'].user.last_name.lower(), x['patient'].user.first_name.lower()), reverse=reverse)
+    elif sort_by == 'email':
+        patients_data.sort(key=lambda x: x['patient'].user.email.lower(), reverse=reverse)
+    elif sort_by == 'diabetes_type':
+        patients_data.sort(key=lambda x: x['patient'].diabetes_type or '', reverse=reverse)
+    elif sort_by == 'total_appointments':
+        patients_data.sort(key=lambda x: x['total_appointments'], reverse=reverse)
+    elif sort_by == 'last_appointment':
+        patients_data.sort(key=lambda x: (x['last_appointment'].appointment_date if x['last_appointment'] else timezone.datetime.min.replace(tzinfo=timezone.get_current_timezone())), reverse=reverse)
+    elif sort_by == 'next_appointment':
+        patients_data.sort(key=lambda x: (x['next_appointment'].appointment_date if x['next_appointment'] else timezone.datetime.max.replace(tzinfo=timezone.get_current_timezone())), reverse=reverse)
+
     # Pagination
     paginator = Paginator(patients_data, 10)  # 10 patients per page
     page_number = request.GET.get('page')
@@ -176,6 +196,8 @@ def patients_list(request):
         'page_obj': page_obj,
         'total_patients': total_patients,
         'patients_with_scheduled': patients_with_scheduled,
+        'sort_by': sort_by,
+        'sort_order': sort_order,
     }
 
     return render(request, 'doctors/patients_list.html', context)
