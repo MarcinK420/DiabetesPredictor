@@ -226,11 +226,27 @@ def patient_detail(request, patient_id):
     if not has_access:
         raise Http404("Nie masz uprawnień do przeglądania tej karty pacjenta.")
 
+    # Get sort parameters
+    sort_by = request.GET.get('sort', 'date')
+    sort_order = request.GET.get('order', 'desc')
+
     # Get appointment history for this patient-doctor combination
     appointments_history = Appointment.objects.filter(
         doctor=doctor,
         patient=patient
-    ).order_by('-appointment_date')
+    )
+
+    # Apply sorting
+    order_prefix = '-' if sort_order == 'desc' else ''
+
+    if sort_by == 'date':
+        appointments_history = appointments_history.order_by(f'{order_prefix}appointment_date')
+    elif sort_by == 'status':
+        appointments_history = appointments_history.order_by(f'{order_prefix}status')
+    elif sort_by == 'reason':
+        appointments_history = appointments_history.order_by(f'{order_prefix}reason')
+    else:
+        appointments_history = appointments_history.order_by('-appointment_date')
 
     # Paginate appointment history
     paginator = Paginator(appointments_history, 10)  # 10 appointments per page
@@ -272,6 +288,8 @@ def patient_detail(request, patient_id):
         'last_appointment': last_appointment,
         'next_appointment': next_appointment,
         'appointments_by_status': appointments_by_status,
+        'sort_by': sort_by,
+        'sort_order': sort_order,
     }
 
     return render(request, 'doctors/patient_detail.html', context)

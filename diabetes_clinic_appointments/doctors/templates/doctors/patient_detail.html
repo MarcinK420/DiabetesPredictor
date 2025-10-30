@@ -336,10 +336,37 @@
                             <table class="table table-hover mb-0">
                                 <thead class="table-light">
                                     <tr>
-                                        <th>Data</th>
+                                        <th>
+                                            <a href="?sort=date&order={% if sort_by == 'date' and sort_order == 'asc' %}desc{% else %}asc{% endif %}" class="text-decoration-none text-dark sortable-header">
+                                                Data
+                                                {% if sort_by == 'date' %}
+                                                    <i class="fas fa-sort-{% if sort_order == 'asc' %}up{% else %}down{% endif %} text-primary"></i>
+                                                {% else %}
+                                                    <i class="fas fa-sort text-muted opacity-50"></i>
+                                                {% endif %}
+                                            </a>
+                                        </th>
                                         <th>Godzina</th>
-                                        <th>Status</th>
-                                        <th>Powód wizyty</th>
+                                        <th>
+                                            <a href="?sort=status&order={% if sort_by == 'status' and sort_order == 'asc' %}desc{% else %}asc{% endif %}" class="text-decoration-none text-dark sortable-header">
+                                                Status
+                                                {% if sort_by == 'status' %}
+                                                    <i class="fas fa-sort-{% if sort_order == 'asc' %}up{% else %}down{% endif %} text-primary"></i>
+                                                {% else %}
+                                                    <i class="fas fa-sort text-muted opacity-50"></i>
+                                                {% endif %}
+                                            </a>
+                                        </th>
+                                        <th>
+                                            <a href="?sort=reason&order={% if sort_by == 'reason' and sort_order == 'asc' %}desc{% else %}asc{% endif %}" class="text-decoration-none text-dark sortable-header">
+                                                Powód wizyty
+                                                {% if sort_by == 'reason' %}
+                                                    <i class="fas fa-sort-{% if sort_order == 'asc' %}up{% else %}down{% endif %} text-primary"></i>
+                                                {% else %}
+                                                    <i class="fas fa-sort text-muted opacity-50"></i>
+                                                {% endif %}
+                                            </a>
+                                        </th>
                                         <th>Notatki</th>
                                         <th class="text-center">Akcje</th>
                                     </tr>
@@ -402,10 +429,10 @@
                                     <ul class="pagination pagination-sm mb-0 justify-content-center">
                                         {% if page_obj.has_previous %}
                                             <li class="page-item">
-                                                <a class="page-link" href="?page=1">&laquo; Pierwsza</a>
+                                                <a class="page-link" href="?page=1&sort={{ sort_by }}&order={{ sort_order }}">&laquo; Pierwsza</a>
                                             </li>
                                             <li class="page-item">
-                                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Poprzednia</a>
+                                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}&sort={{ sort_by }}&order={{ sort_order }}">Poprzednia</a>
                                             </li>
                                         {% endif %}
 
@@ -416,17 +443,17 @@
                                                 </li>
                                             {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
                                                 <li class="page-item">
-                                                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                                    <a class="page-link" href="?page={{ num }}&sort={{ sort_by }}&order={{ sort_order }}">{{ num }}</a>
                                                 </li>
                                             {% endif %}
                                         {% endfor %}
 
                                         {% if page_obj.has_next %}
                                             <li class="page-item">
-                                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Następna</a>
+                                                <a class="page-link" href="?page={{ page_obj.next_page_number }}&sort={{ sort_by }}&order={{ sort_order }}">Następna</a>
                                             </li>
                                             <li class="page-item">
-                                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Ostatnia &raquo;</a>
+                                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&sort={{ sort_by }}&order={{ sort_order }}">Ostatnia &raquo;</a>
                                             </li>
                                         {% endif %}
                                     </ul>
@@ -449,6 +476,10 @@
 <style>
 .opacity-75 {
     opacity: 0.75;
+}
+
+.opacity-50 {
+    opacity: 0.5;
 }
 
 .breadcrumb {
@@ -479,6 +510,26 @@
 
 .fs-6 {
     font-size: 1rem !important;
+}
+
+/* Sortable header styles */
+.sortable-header {
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.15s ease-in-out;
+}
+
+.sortable-header:hover {
+    color: var(--bs-primary) !important;
+}
+
+.sortable-header i {
+    font-size: 0.85em;
+    margin-left: 0.25rem;
+}
+
+thead th {
+    white-space: nowrap;
 }
 </style>
 

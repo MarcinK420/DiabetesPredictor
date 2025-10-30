@@ -84,18 +84,39 @@ def generate_recurring_appointments(parent_appointment, recurrence_pattern, end_
 def patient_appointment_history(request):
     if not request.user.is_patient():
         return redirect('authentication:login')
-    
+
     patient = request.user.patient_profile
-    appointments = Appointment.objects.filter(patient=patient).order_by('-appointment_date')
-    
+
+    # Get sort parameters
+    sort_by = request.GET.get('sort', 'date')
+    sort_order = request.GET.get('order', 'desc')
+
+    appointments = Appointment.objects.filter(patient=patient).select_related('doctor__user')
+
+    # Apply sorting
+    order_prefix = '-' if sort_order == 'desc' else ''
+
+    if sort_by == 'date':
+        appointments = appointments.order_by(f'{order_prefix}appointment_date')
+    elif sort_by == 'doctor':
+        appointments = appointments.order_by(f'{order_prefix}doctor__user__last_name', f'{order_prefix}doctor__user__first_name')
+    elif sort_by == 'status':
+        appointments = appointments.order_by(f'{order_prefix}status')
+    elif sort_by == 'reason':
+        appointments = appointments.order_by(f'{order_prefix}reason')
+    else:
+        appointments = appointments.order_by('-appointment_date')
+
     paginator = Paginator(appointments, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-    
+
     context = {
         'appointments': page_obj,
         'patient': patient,
         'now': timezone.now(),
+        'sort_by': sort_by,
+        'sort_order': sort_order,
     }
     return render(request, 'appointments/patient_history.html', context)
 
