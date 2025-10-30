@@ -96,8 +96,13 @@ def patient_appointment_history(request):
     doctor_filter = request.GET.get('doctor', '')
     date_from = request.GET.get('date_from', '')
     date_to = request.GET.get('date_to', '')
+    search_query = request.GET.get('search', '')
 
     appointments = Appointment.objects.filter(patient=patient).select_related('doctor__user')
+
+    # Apply search filter
+    if search_query:
+        appointments = appointments.filter(reason__icontains=search_query)
 
     # Apply filters
     if status_filter:
@@ -148,6 +153,8 @@ def patient_appointment_history(request):
 
     # Build filter params string for pagination and sorting
     filter_params = ''
+    if search_query:
+        filter_params += f'&search={search_query}'
     if status_filter:
         filter_params += f'&status={status_filter}'
     if doctor_filter:
@@ -163,6 +170,7 @@ def patient_appointment_history(request):
         'now': timezone.now(),
         'sort_by': sort_by,
         'sort_order': sort_order,
+        'search_query': search_query,
         'status_filter': status_filter,
         'doctor_filter': doctor_filter,
         'date_from': date_from,

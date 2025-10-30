@@ -60,6 +60,12 @@
                 <div class="card-body">
                     <form method="get" class="row g-3">
                         <div class="col-md-4">
+                            <label for="search" class="form-label">Wyszukaj pacjenta</label>
+                            <input type="text" class="form-control" id="search" name="search"
+                                   placeholder="Imię, nazwisko lub email..."
+                                   value="{{ search_query }}">
+                        </div>
+                        <div class="col-md-3">
                             <label for="diabetes_type" class="form-label">Typ cukrzycy</label>
                             <select class="form-select" id="diabetes_type" name="diabetes_type">
                                 <option value="">Wszystkie typy</option>
@@ -68,7 +74,7 @@
                                 <option value="gestational" {% if diabetes_filter == 'gestational' %}selected{% endif %}>Ciążowa</option>
                             </select>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label for="appointment_status" class="form-label">Status wizyt</label>
                             <select class="form-select" id="appointment_status" name="appointment_status">
                                 <option value="">Wszyscy pacjenci</option>
@@ -76,12 +82,12 @@
                                 <option value="without_upcoming" {% if appointment_status_filter == 'without_upcoming' %}selected{% endif %}>Bez nadchodzących wizyt</option>
                             </select>
                         </div>
-                        <div class="col-md-4 d-flex align-items-end gap-2">
+                        <div class="col-md-2 d-flex align-items-end gap-2">
                             <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-search"></i> Filtruj
+                                <i class="fas fa-search"></i> Szukaj
                             </button>
-                            <a href="{% url 'doctors:patients_list' %}" class="btn btn-outline-secondary">
-                                <i class="fas fa-times"></i> Wyczyść
+                            <a href="{% url 'doctors:patients_list' %}" class="btn btn-outline-secondary" title="Wyczyść filtry">
+                                <i class="fas fa-times"></i>
                             </a>
                         </div>
                     </form>

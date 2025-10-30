@@ -129,11 +129,20 @@ def patients_list(request):
     # Get filter parameters
     diabetes_filter = request.GET.get('diabetes_type', '')
     appointment_status_filter = request.GET.get('appointment_status', '')
+    search_query = request.GET.get('search', '')
 
     # Get unique patients with their appointment statistics
     patients_query = Patient.objects.filter(
         appointments__doctor=doctor
     )
+
+    # Apply search filter
+    if search_query:
+        patients_query = patients_query.filter(
+            Q(user__first_name__icontains=search_query) |
+            Q(user__last_name__icontains=search_query) |
+            Q(user__email__icontains=search_query)
+        )
 
     # Apply diabetes type filter
     if diabetes_filter:
@@ -213,6 +222,8 @@ def patients_list(request):
 
     # Build filter params string for pagination and sorting
     filter_params = ''
+    if search_query:
+        filter_params += f'&search={search_query}'
     if diabetes_filter:
         filter_params += f'&diabetes_type={diabetes_filter}'
     if appointment_status_filter:
@@ -225,6 +236,7 @@ def patients_list(request):
         'patients_with_scheduled': patients_with_scheduled,
         'sort_by': sort_by,
         'sort_order': sort_order,
+        'search_query': search_query,
         'diabetes_filter': diabetes_filter,
         'appointment_status_filter': appointment_status_filter,
         'filter_params': filter_params,
