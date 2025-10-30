@@ -207,6 +207,72 @@
         </div>
     </div>
 
+    <!-- Attachments Section -->
+    {% if attachments %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-paperclip"></i> Załączniki
+                        <span class="badge bg-light text-success ms-2">{{ attachments|length }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for attachment in attachments %}
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <!-- File Icon/Preview -->
+                                        <div class="text-center mb-2">
+                                            {% if attachment.is_image %}
+                                                <img src="{{ attachment.file.url }}" alt="{{ attachment.filename }}"
+                                                     class="img-thumbnail" style="max-height: 150px; max-width: 100%; cursor: pointer;"
+                                                     onclick="window.open('{{ attachment.file.url }}', '_blank')">
+                                            {% elif attachment.is_pdf %}
+                                                <i class="fas fa-file-pdf fa-4x text-danger"></i>
+                                            {% else %}
+                                                <i class="fas fa-file fa-4x text-secondary"></i>
+                                            {% endif %}
+                                        </div>
+
+                                        <!-- File Info -->
+                                        <h6 class="card-title text-truncate" title="{{ attachment.filename }}">
+                                            {{ attachment.filename }}
+                                        </h6>
+                                        <p class="card-text small">
+                                            <span class="badge bg-info">{{ attachment.get_file_type_display }}</span>
+                                            <span class="badge bg-secondary">{{ attachment.file_size_mb }} MB</span>
+                                        </p>
+                                        {% if attachment.description %}
+                                            <p class="card-text small text-muted">{{ attachment.description }}</p>
+                                        {% endif %}
+                                        <p class="card-text">
+                                            <small class="text-muted">
+                                                Dodano: {{ attachment.uploaded_at|date:"d.m.Y H:i" }}<br>
+                                                przez: Dr. {{ attachment.uploaded_by.user.last_name }}
+                                            </small>
+                                        </p>
+
+                                        <!-- Actions -->
+                                        <div class="d-grid gap-2">
+                                            <a href="{% url 'doctors:download_attachment' attachment.id %}"
+                                               class="btn btn-primary btn-sm">
+                                                <i class="fas fa-download"></i> Pobierz
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Action Buttons -->
     <div class="row mt-4">
         <div class="col-12 text-center">

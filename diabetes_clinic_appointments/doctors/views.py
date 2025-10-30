@@ -348,10 +348,14 @@ def view_appointment_notes(request, appointment_id):
     if appointment.doctor != doctor:
         raise Http404("Nie masz uprawnień do przeglądania tej wizyty.")
 
+    # Get attachments
+    attachments = appointment.attachments.all()
+
     context = {
         'doctor': doctor,
         'appointment': appointment,
         'patient': appointment.patient,
+        'attachments': attachments,
     }
 
     return render(request, 'doctors/view_appointment_notes.html', context)
