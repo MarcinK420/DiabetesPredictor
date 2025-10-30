@@ -91,7 +91,36 @@ def patient_appointment_history(request):
     sort_by = request.GET.get('sort', 'date')
     sort_order = request.GET.get('order', 'desc')
 
+    # Get filter parameters
+    status_filter = request.GET.get('status', '')
+    doctor_filter = request.GET.get('doctor', '')
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
+
     appointments = Appointment.objects.filter(patient=patient).select_related('doctor__user')
+
+    # Apply filters
+    if status_filter:
+        appointments = appointments.filter(status=status_filter)
+
+    if doctor_filter:
+        appointments = appointments.filter(doctor_id=doctor_filter)
+
+    if date_from:
+        try:
+            from_date = timezone.datetime.strptime(date_from, '%Y-%m-%d')
+            from_date = timezone.make_aware(from_date)
+            appointments = appointments.filter(appointment_date__gte=from_date)
+        except ValueError:
+            pass
+
+    if date_to:
+        try:
+            to_date = timezone.datetime.strptime(date_to, '%Y-%m-%d')
+            to_date = timezone.make_aware(to_date.replace(hour=23, minute=59, second=59))
+            appointments = appointments.filter(appointment_date__lte=to_date)
+        except ValueError:
+            pass
 
     # Apply sorting
     order_prefix = '-' if sort_order == 'desc' else ''
@@ -111,12 +140,35 @@ def patient_appointment_history(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
+    # Get all doctors that patient had appointments with (for filter dropdown)
+    from doctors.models import Doctor
+    patient_doctors = Doctor.objects.filter(
+        appointments__patient=patient
+    ).distinct().select_related('user').order_by('user__last_name', 'user__first_name')
+
+    # Build filter params string for pagination and sorting
+    filter_params = ''
+    if status_filter:
+        filter_params += f'&status={status_filter}'
+    if doctor_filter:
+        filter_params += f'&doctor={doctor_filter}'
+    if date_from:
+        filter_params += f'&date_from={date_from}'
+    if date_to:
+        filter_params += f'&date_to={date_to}'
+
     context = {
         'appointments': page_obj,
         'patient': patient,
         'now': timezone.now(),
         'sort_by': sort_by,
         'sort_order': sort_order,
+        'status_filter': status_filter,
+        'doctor_filter': doctor_filter,
+        'date_from': date_from,
+        'date_to': date_to,
+        'patient_doctors': patient_doctors,
+        'filter_params': filter_params,
     }
     return render(request, 'appointments/patient_history.html', context)
 

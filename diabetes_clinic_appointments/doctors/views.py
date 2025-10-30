@@ -126,10 +126,20 @@ def patients_list(request):
     sort_by = request.GET.get('sort', 'name')
     sort_order = request.GET.get('order', 'asc')
 
+    # Get filter parameters
+    diabetes_filter = request.GET.get('diabetes_type', '')
+    appointment_status_filter = request.GET.get('appointment_status', '')
+
     # Get unique patients with their appointment statistics
-    patients_with_appointments = Patient.objects.filter(
+    patients_query = Patient.objects.filter(
         appointments__doctor=doctor
-    ).annotate(
+    )
+
+    # Apply diabetes type filter
+    if diabetes_filter:
+        patients_query = patients_query.filter(diabetes_type=diabetes_filter)
+
+    patients_with_appointments = patients_query.annotate(
         total_appointments=Count('appointments', filter=Q(appointments__doctor=doctor)),
         scheduled_appointments=Count(
             'appointments',
@@ -157,14 +167,24 @@ def patients_list(request):
             appointment_date__gte=timezone.now()
         ).order_by('appointment_date').first()
 
-        patients_data.append({
+        patient_info = {
             'patient': patient,
             'total_appointments': patient.total_appointments,
             'scheduled_appointments': patient.scheduled_appointments,
             'completed_appointments': patient.completed_appointments,
             'last_appointment': last_appointment,
             'next_appointment': next_appointment,
-        })
+        }
+
+        # Apply appointment status filter
+        if appointment_status_filter == 'with_upcoming':
+            if patient.scheduled_appointments > 0:
+                patients_data.append(patient_info)
+        elif appointment_status_filter == 'without_upcoming':
+            if patient.scheduled_appointments == 0:
+                patients_data.append(patient_info)
+        else:
+            patients_data.append(patient_info)
 
     # Apply sorting to patients_data
     reverse = (sort_order == 'desc')
@@ -191,6 +211,13 @@ def patients_list(request):
     total_patients = len(patients_data)
     patients_with_scheduled = sum(1 for p in patients_data if p['scheduled_appointments'] > 0)
 
+    # Build filter params string for pagination and sorting
+    filter_params = ''
+    if diabetes_filter:
+        filter_params += f'&diabetes_type={diabetes_filter}'
+    if appointment_status_filter:
+        filter_params += f'&appointment_status={appointment_status_filter}'
+
     context = {
         'doctor': doctor,
         'page_obj': page_obj,
@@ -198,6 +225,9 @@ def patients_list(request):
         'patients_with_scheduled': patients_with_scheduled,
         'sort_by': sort_by,
         'sort_order': sort_order,
+        'diabetes_filter': diabetes_filter,
+        'appointment_status_filter': appointment_status_filter,
+        'filter_params': filter_params,
     }
 
     return render(request, 'doctors/patients_list.html', context)
@@ -230,11 +260,18 @@ def patient_detail(request, patient_id):
     sort_by = request.GET.get('sort', 'date')
     sort_order = request.GET.get('order', 'desc')
 
+    # Get filter parameters
+    status_filter = request.GET.get('status', '')
+
     # Get appointment history for this patient-doctor combination
     appointments_history = Appointment.objects.filter(
         doctor=doctor,
         patient=patient
     )
+
+    # Apply filter
+    if status_filter:
+        appointments_history = appointments_history.filter(status=status_filter)
 
     # Apply sorting
     order_prefix = '-' if sort_order == 'desc' else ''
@@ -277,6 +314,11 @@ def patient_detail(request, patient_id):
         'no_show': appointments_history.filter(status='no_show'),
     }
 
+    # Build filter params string for pagination and sorting
+    filter_params = ''
+    if status_filter:
+        filter_params += f'&status={status_filter}'
+
     context = {
         'doctor': doctor,
         'patient': patient,
@@ -290,6 +332,8 @@ def patient_detail(request, patient_id):
         'appointments_by_status': appointments_by_status,
         'sort_by': sort_by,
         'sort_order': sort_order,
+        'status_filter': status_filter,
+        'filter_params': filter_params,
     }
 
     return render(request, 'doctors/patient_detail.html', context)
