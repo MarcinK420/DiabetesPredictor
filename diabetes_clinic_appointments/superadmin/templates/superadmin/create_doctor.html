@@ -1,0 +1,336 @@
+{% extends 'superadmin/base.html' %}
+
+{% block title %}Utwórz Konto Lekarza - Panel Superadmina{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-user-md"></i> Utwórz Konto Lekarza</h2>
+    <a href="{% url 'superadmin:dashboard' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Powrót
+    </a>
+</div>
+
+<!-- Messages -->
+{% if messages %}
+    <div class="row mb-4">
+        <div class="col-12">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endif %}
+
+<div class="card">
+    <div class="card-body">
+        <p class="text-muted mb-4">
+            <i class="fas fa-info-circle"></i>
+            Wypełnij podstawowe dane lekarza. Po utworzeniu konta, lekarz będzie mógł zalogować się
+            i uzupełnić dodatkowe informacje (biografia, certyfikaty) w swoim profilu.
+        </p>
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            <!-- Dane logowania -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-key"></i> Dane Logowania</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.username.id_for_label }}" class="form-label">
+                                {{ form.username.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.username }}
+                            {% if form.username.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.username.errors }}
+                                </div>
+                            {% endif %}
+                            {% if form.username.help_text %}
+                                <div class="form-text">{{ form.username.help_text }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.password.id_for_label }}" class="form-label">
+                                {{ form.password.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.password }}
+                            {% if form.password.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.password.errors }}
+                                </div>
+                            {% endif %}
+                            {% if form.password.help_text %}
+                                <div class="form-text">{{ form.password.help_text }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.password_confirm.id_for_label }}" class="form-label">
+                                {{ form.password_confirm.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.password_confirm }}
+                            {% if form.password_confirm.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.password_confirm.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dane osobowe -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-user"></i> Dane Osobowe</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <label for="{{ form.first_name.id_for_label }}" class="form-label">
+                                {{ form.first_name.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.first_name }}
+                            {% if form.first_name.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.first_name.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label for="{{ form.last_name.id_for_label }}" class="form-label">
+                                {{ form.last_name.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.last_name }}
+                            {% if form.last_name.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.last_name.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label for="{{ form.email.id_for_label }}" class="form-label">
+                                {{ form.email.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.email }}
+                            {% if form.email.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.email.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label for="{{ form.phone_number.id_for_label }}" class="form-label">
+                                {{ form.phone_number.label }}
+                            </label>
+                            {{ form.phone_number }}
+                            {% if form.phone_number.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.phone_number.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dane zawodowe -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-briefcase"></i> Dane Zawodowe</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.license_number.id_for_label }}" class="form-label">
+                                {{ form.license_number.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.license_number }}
+                            {% if form.license_number.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.license_number.errors }}
+                                </div>
+                            {% endif %}
+                            {% if form.license_number.help_text %}
+                                <div class="form-text">{{ form.license_number.help_text }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.specialization.id_for_label }}" class="form-label">
+                                {{ form.specialization.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.specialization }}
+                            {% if form.specialization.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.specialization.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.years_of_experience.id_for_label }}" class="form-label">
+                                {{ form.years_of_experience.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.years_of_experience }}
+                            {% if form.years_of_experience.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.years_of_experience.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.consultation_fee.id_for_label }}" class="form-label">
+                                {{ form.consultation_fee.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                {{ form.consultation_fee }}
+                                <span class="input-group-text">zł</span>
+                            </div>
+                            {% if form.consultation_fee.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.consultation_fee.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-8 mb-3">
+                            <label for="{{ form.office_address.id_for_label }}" class="form-label">
+                                {{ form.office_address.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.office_address }}
+                            {% if form.office_address.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.office_address.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label for="{{ form.education.id_for_label }}" class="form-label">
+                                {{ form.education.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.education }}
+                            {% if form.education.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.education.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Godziny pracy -->
+            <div class="card mb-4">
+                <div class="card-header bg-warning">
+                    <h5 class="mb-0"><i class="fas fa-clock"></i> Godziny Pracy</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.working_days.id_for_label }}" class="form-label">
+                                {{ form.working_days.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.working_days }}
+                            {% if form.working_days.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.working_days.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.working_hours_start.id_for_label }}" class="form-label">
+                                {{ form.working_hours_start.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.working_hours_start }}
+                            {% if form.working_hours_start.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.working_hours_start.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.working_hours_end.id_for_label }}" class="form-label">
+                                {{ form.working_hours_end.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.working_hours_end }}
+                            {% if form.working_hours_end.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.working_hours_end.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-check">
+                                {{ form.is_accepting_patients }}
+                                <label class="form-check-label" for="{{ form.is_accepting_patients.id_for_label }}">
+                                    {{ form.is_accepting_patients.label }}
+                                </label>
+                            </div>
+                            {% if form.is_accepting_patients.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.is_accepting_patients.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Errors -->
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+
+            <!-- Submit Button -->
+            <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                <button type="submit" class="btn btn-primary btn-lg px-5">
+                    <i class="fas fa-save"></i> Utwórz Konto Lekarza
+                </button>
+                <a href="{% url 'superadmin:dashboard' %}" class="btn btn-secondary btn-lg px-5">
+                    <i class="fas fa-times"></i> Anuluj
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

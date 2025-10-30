@@ -7,6 +7,7 @@ from patients.models import Patient
 from doctors.models import Doctor
 from django.utils import timezone
 from datetime import timedelta
+from .forms import CreateDoctorForm
 
 def is_superuser(user):
     """Sprawdza czy użytkownik jest superadminem"""
@@ -222,3 +223,27 @@ def reset_user_password(request, user_id):
             messages.error(request, 'Podaj nowe hasło.')
 
     return redirect('superadmin:user_detail', user_id=user_id)
+
+@login_required
+@user_passes_test(is_superuser)
+def create_doctor(request):
+    """Utwórz nowe konto lekarza"""
+    if request.method == 'POST':
+        form = CreateDoctorForm(request.POST)
+        if form.is_valid():
+            user, doctor = form.save()
+            messages.success(
+                request,
+                f'Konto lekarza {user.get_full_name()} zostało utworzone pomyślnie! '
+                f'Login: {user.username}'
+            )
+            return redirect('superadmin:user_detail', user_id=user.id)
+        else:
+            messages.error(request, 'Wystąpiły błędy w formularzu. Sprawdź poniższe pola.')
+    else:
+        form = CreateDoctorForm()
+
+    context = {
+        'form': form,
+    }
+    return render(request, 'superadmin/create_doctor.html', context)
