@@ -175,6 +175,35 @@
                             {% endif %}
                         </div>
 
+                        <!-- Template Selector -->
+                        {% if templates %}
+                        <div class="mb-4">
+                            <label class="form-label">
+                                <i class="fas fa-file-alt"></i> Użyj szablonu
+                            </label>
+                            <div class="d-flex gap-2">
+                                <select id="template-selector" class="form-control">
+                                    <option value="">-- Wybierz szablon --</option>
+                                    {% for template in templates %}
+                                        <option value="{{ template.id }}" data-content="{{ template.content|escapejs }}">
+                                            {{ template.name }} ({{ template.get_category_display }})
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <button type="button" class="btn btn-outline-primary" id="load-template-btn">
+                                    <i class="fas fa-download"></i> Wczytaj
+                                </button>
+                                <a href="{% url 'doctors:list_templates' %}" class="btn btn-outline-secondary" title="Zarządzaj szablonami">
+                                    <i class="fas fa-cog"></i>
+                                </a>
+                            </div>
+                            <div class="form-text">
+                                Wybierz szablon, aby automatycznie wypełnić notatkę typową strukturą.
+                                <strong>Uwaga:</strong> Obecna treść notatki zostanie zastąpiona.
+                            </div>
+                        </div>
+                        {% endif %}
+
                         <!-- Notes Field with CKEditor -->
                         <div class="mb-4">
                             <label for="{{ form.notes.id_for_label }}" class="form-label">
@@ -351,10 +380,64 @@
 {% block extra_js %}
 {{ form.media.js }}
 <script>
-    // Additional JavaScript if needed
     document.addEventListener('DOMContentLoaded', function() {
-        // Auto-save draft functionality could be added here
         console.log('CKEditor form loaded');
+
+        // Template loader functionality
+        const templateSelector = document.getElementById('template-selector');
+        const loadTemplateBtn = document.getElementById('load-template-btn');
+
+        if (templateSelector && loadTemplateBtn) {
+            loadTemplateBtn.addEventListener('click', function() {
+                const selectedOption = templateSelector.options[templateSelector.selectedIndex];
+
+                if (!selectedOption.value) {
+                    alert('Proszę wybrać szablon z listy.');
+                    return;
+                }
+
+                const templateContent = selectedOption.getAttribute('data-content');
+                const templateName = selectedOption.text;
+
+                // Confirm before replacing current content
+                if (CKEDITOR.instances['id_notes'].getData().trim() !== '') {
+                    if (!confirm('Obecna treść notatki zostanie zastąpiona szablonem "' + templateName + '". Kontynuować?')) {
+                        return;
+                    }
+                }
+
+                // Set the template content in CKEditor
+                if (CKEDITOR.instances['id_notes']) {
+                    CKEDITOR.instances['id_notes'].setData(templateContent);
+
+                    // Show success message
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = 'alert alert-success alert-dismissible fade show';
+                    alertDiv.setAttribute('role', 'alert');
+                    alertDiv.innerHTML = `
+                        <i class="fas fa-check-circle"></i> Szablon "${templateName}" został wczytany pomyślnie!
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    `;
+
+                    // Insert alert before the form
+                    const form = document.getElementById('notes-form');
+                    form.parentElement.insertBefore(alertDiv, form);
+
+                    // Auto-dismiss after 3 seconds
+                    setTimeout(function() {
+                        alertDiv.classList.remove('show');
+                        setTimeout(function() {
+                            alertDiv.remove();
+                        }, 150);
+                    }, 3000);
+
+                    // Reset selector
+                    templateSelector.selectedIndex = 0;
+                } else {
+                    alert('Błąd: Nie można załadować edytora CKEditor.');
+                }
+            });
+        }
     });
 </script>
 {% endblock %}

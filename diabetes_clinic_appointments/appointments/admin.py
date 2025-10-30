@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Appointment, AppointmentAttachment
+from .models import Appointment, AppointmentAttachment, NoteTemplate
 
 @admin.register(Appointment)
 class AppointmentAdmin(admin.ModelAdmin):
@@ -22,3 +22,26 @@ class AppointmentAttachmentAdmin(admin.ModelAdmin):
     def filename(self, obj):
         return obj.filename
     filename.short_description = 'Nazwa pliku'
+
+
+@admin.register(NoteTemplate)
+class NoteTemplateAdmin(admin.ModelAdmin):
+    list_display = ['name', 'category', 'is_active', 'created_by', 'created_at']
+    list_filter = ['category', 'is_active', 'created_at']
+    search_fields = ['name', 'description', 'content']
+    ordering = ['category', 'name']
+    readonly_fields = ['created_at', 'updated_at']
+    date_hierarchy = 'created_at'
+
+    fieldsets = (
+        ('Podstawowe informacje', {
+            'fields': ('name', 'category', 'description', 'is_active')
+        }),
+        ('Treść szablonu', {
+            'fields': ('content',)
+        }),
+        ('Metadane', {
+            'fields': ('created_by', 'created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )

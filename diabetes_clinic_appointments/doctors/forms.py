@@ -1,6 +1,6 @@
 from django import forms
 from django.core.exceptions import ValidationError
-from appointments.models import Appointment, AppointmentAttachment
+from appointments.models import Appointment, AppointmentAttachment, NoteTemplate
 from ckeditor.widgets import CKEditorWidget
 
 
@@ -99,3 +99,52 @@ class AppointmentAttachmentForm(forms.ModelForm):
             )
 
         return file
+
+
+class NoteTemplateForm(forms.ModelForm):
+    """Formularz do zarządzania szablonami notatek"""
+
+    name = forms.CharField(
+        max_length=200,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Np. Konsultacja diabetologiczna - nowy pacjent'
+        }),
+        label='Nazwa szablonu',
+        help_text='Podaj opisową nazwę szablonu'
+    )
+
+    description = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'placeholder': 'Krótki opis przeznaczenia szablonu...'
+        }),
+        label='Opis',
+        help_text='Opcjonalny opis, kiedy stosować ten szablon'
+    )
+
+    content = forms.CharField(
+        widget=CKEditorWidget(config_name='doctor_notes'),
+        label='Treść szablonu',
+        help_text='Wprowadź treść szablonu z formatowaniem'
+    )
+
+    category = forms.ChoiceField(
+        choices=NoteTemplate.CATEGORY_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        label='Kategoria'
+    )
+
+    is_active = forms.BooleanField(
+        required=False,
+        initial=True,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        label='Szablon aktywny',
+        help_text='Czy szablon jest dostępny do użycia'
+    )
+
+    class Meta:
+        model = NoteTemplate
+        fields = ['name', 'description', 'content', 'category', 'is_active']

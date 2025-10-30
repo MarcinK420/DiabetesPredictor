@@ -1,0 +1,60 @@
+{% extends 'authentication/base.html' %}
+
+{% block title %}Usuń szablon - Klinika Diabetologiczna{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="display-6 mb-2">
+                <i class="fas fa-trash text-danger"></i> Potwierdzenie usunięcia szablonu
+            </h1>
+            <p class="text-muted mb-0">Upewnij się, że chcesz usunąć ten szablon</p>
+        </div>
+    </div>
+
+    <!-- Confirmation Card -->
+    <div class="row">
+        <div class="col-lg-8 col-xl-6 mx-auto">
+            <div class="card shadow-sm border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle"></i> Ostrzeżenie
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-3">Czy na pewno chcesz usunąć szablon:</p>
+
+                    <div class="alert alert-warning">
+                        <h5 class="alert-heading">{{ template.name }}</h5>
+                        <hr>
+                        <p class="mb-1"><strong>Kategoria:</strong> {{ template.get_category_display }}</p>
+                        {% if template.description %}
+                            <p class="mb-1"><strong>Opis:</strong> {{ template.description }}</p>
+                        {% endif %}
+                        <p class="mb-0"><strong>Utworzony:</strong> {{ template.created_at|date:"d.m.Y H:i" }}</p>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Uwaga:</strong> Ta operacja jest nieodwracalna. Szablon zostanie trwale usunięty.
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'doctors:list_templates' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left"></i> Anuluj
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash"></i> Tak, usuń szablon
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

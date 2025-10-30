@@ -5,7 +5,7 @@ from django.utils import timezone
 from django.core.paginator import Paginator
 from django.db.models import Count, Q
 from django.http import Http404, JsonResponse, FileResponse, HttpResponseForbidden
-from .forms import AppointmentNotesForm, AppointmentAttachmentForm
+from .forms import AppointmentNotesForm, AppointmentAttachmentForm, NoteTemplateForm
 
 @login_required
 def dashboard(request):
@@ -315,6 +315,10 @@ def edit_appointment_notes(request, appointment_id):
     # Get existing attachments
     attachments = appointment.attachments.all()
 
+    # Get available note templates
+    from appointments.models import NoteTemplate
+    templates = NoteTemplate.objects.filter(is_active=True).order_by('category', 'name')
+
     # Pass return_to parameter to template
     return_to = request.GET.get('return_to', 'patient_detail')
 
@@ -324,6 +328,7 @@ def edit_appointment_notes(request, appointment_id):
         'form': form,
         'attachment_form': attachment_form,
         'attachments': attachments,
+        'templates': templates,
         'patient': appointment.patient,
         'return_to': return_to,
     }
@@ -428,3 +433,139 @@ def download_attachment(request, attachment_id):
     except Exception as e:
         messages.error(request, f'Błąd podczas pobierania pliku: {str(e)}')
         return redirect('doctors:edit_appointment_notes', appointment_id=attachment.appointment.id)
+
+
+# ============================================
+# Note Templates Management Views
+# ============================================
+
+@login_required
+def list_templates(request):
+    """Lista szablonów notatek"""
+    if not request.user.is_doctor():
+        return redirect('authentication:login')
+
+    doctor = request.user.doctor_profile
+
+    from appointments.models import NoteTemplate
+
+    # Get all active templates, grouped by category
+    templates = NoteTemplate.objects.filter(is_active=True).order_by('category', 'name')
+
+    # Group templates by category
+    templates_by_category = {}
+    for template in templates:
+        category = template.get_category_display()
+        if category not in templates_by_category:
+            templates_by_category[category] = []
+        templates_by_category[category].append(template)
+
+    context = {
+        'doctor': doctor,
+        'templates_by_category': templates_by_category,
+        'total_templates': templates.count(),
+    }
+
+    return render(request, 'doctors/list_templates.html', context)
+
+
+@login_required
+def create_template(request):
+    """Tworzenie nowego szablonu notatki"""
+    if not request.user.is_doctor():
+        return redirect('authentication:login')
+
+    doctor = request.user.doctor_profile
+
+    if request.method == 'POST':
+        form = NoteTemplateForm(request.POST)
+        if form.is_valid():
+            template = form.save(commit=False)
+            template.created_by = doctor
+            template.save()
+            messages.success(request, f'Szablon "{template.name}" został utworzony.')
+            return redirect('doctors:list_templates')
+    else:
+        form = NoteTemplateForm()
+
+    context = {
+        'doctor': doctor,
+        'form': form,
+        'action': 'create',
+    }
+
+    return render(request, 'doctors/template_form.html', context)
+
+
+@login_required
+def edit_template(request, template_id):
+    """Edycja szablonu notatki"""
+    if not request.user.is_doctor():
+        return redirect('authentication:login')
+
+    doctor = request.user.doctor_profile
+
+    from appointments.models import NoteTemplate
+
+    template = get_object_or_404(NoteTemplate, id=template_id)
+
+    if request.method == 'POST':
+        form = NoteTemplateForm(request.POST, instance=template)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Szablon "{template.name}" został zaktualizowany.')
+            return redirect('doctors:list_templates')
+    else:
+        form = NoteTemplateForm(instance=template)
+
+    context = {
+        'doctor': doctor,
+        'form': form,
+        'template': template,
+        'action': 'edit',
+    }
+
+    return render(request, 'doctors/template_form.html', context)
+
+
+@login_required
+def delete_template(request, template_id):
+    """Usuwanie szablonu notatki"""
+    if not request.user.is_doctor():
+        return redirect('authentication:login')
+
+    doctor = request.user.doctor_profile
+
+    from appointments.models import NoteTemplate
+
+    template = get_object_or_404(NoteTemplate, id=template_id)
+
+    if request.method == 'POST':
+        template_name = template.name
+        template.delete()
+        messages.success(request, f'Szablon "{template_name}" został usunięty.')
+        return redirect('doctors:list_templates')
+
+    context = {
+        'doctor': doctor,
+        'template': template,
+    }
+
+    return render(request, 'doctors/confirm_delete_template.html', context)
+
+
+@login_required
+def get_template_content(request, template_id):
+    """API endpoint do pobierania treści szablonu (AJAX)"""
+    if not request.user.is_doctor():
+        return JsonResponse({'error': 'Brak uprawnień'}, status=403)
+
+    from appointments.models import NoteTemplate
+
+    template = get_object_or_404(NoteTemplate, id=template_id, is_active=True)
+
+    return JsonResponse({
+        'success': True,
+        'content': template.content,
+        'name': template.name,
+    })

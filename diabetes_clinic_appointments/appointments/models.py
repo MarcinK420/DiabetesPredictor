@@ -171,3 +171,69 @@ class AppointmentAttachment(models.Model):
     def file_size_mb(self):
         """Return file size in MB"""
         return round(self.file_size / (1024 * 1024), 2)
+
+
+class NoteTemplate(models.Model):
+    """Model for storing reusable note templates for common cases"""
+
+    CATEGORY_CHOICES = [
+        ('consultation', 'Konsultacja'),
+        ('checkup', 'Kontrola'),
+        ('test_results', 'Wyniki badań'),
+        ('medication', 'Zmiana leczenia'),
+        ('diet', 'Dieta'),
+        ('complication', 'Powikłanie'),
+        ('education', 'Edukacja pacjenta'),
+        ('other', 'Inne'),
+    ]
+
+    name = models.CharField(
+        max_length=200,
+        verbose_name='Nazwa szablonu',
+        help_text='Nazwa szablonu wyświetlana na liście'
+    )
+    description = models.TextField(
+        blank=True,
+        verbose_name='Opis',
+        help_text='Krótki opis przeznaczenia szablonu'
+    )
+    content = RichTextField(
+        config_name='doctor_notes',
+        verbose_name='Treść szablonu',
+        help_text='Treść szablonu notatki (HTML)'
+    )
+    category = models.CharField(
+        max_length=20,
+        choices=CATEGORY_CHOICES,
+        default='other',
+        verbose_name='Kategoria'
+    )
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name='Aktywny',
+        help_text='Czy szablon jest dostępny do użycia'
+    )
+    created_by = models.ForeignKey(
+        Doctor,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name='Utworzony przez',
+        related_name='created_templates'
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Data utworzenia'
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name='Data aktualizacji'
+    )
+
+    class Meta:
+        ordering = ['category', 'name']
+        verbose_name = "Szablon notatki"
+        verbose_name_plural = "Szablony notatek"
+
+    def __str__(self):
+        return f"{self.name} ({self.get_category_display()})"

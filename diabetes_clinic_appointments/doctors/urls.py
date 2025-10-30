@@ -12,4 +12,10 @@ urlpatterns = [
     path('appointment/<int:appointment_id>/notes/view/', views.view_appointment_notes, name='view_appointment_notes'),
     path('attachment/<int:attachment_id>/delete/', views.delete_attachment, name='delete_attachment'),
     path('attachment/<int:attachment_id>/download/', views.download_attachment, name='download_attachment'),
+    # Note Templates
+    path('templates/', views.list_templates, name='list_templates'),
+    path('templates/create/', views.create_template, name='create_template'),
+    path('templates/<int:template_id>/edit/', views.edit_template, name='edit_template'),
+    path('templates/<int:template_id>/delete/', views.delete_template, name='delete_template'),
+    path('templates/<int:template_id>/content/', views.get_template_content, name='get_template_content'),
 ]
