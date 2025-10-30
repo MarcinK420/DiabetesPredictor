@@ -1,6 +1,8 @@
 from django import forms
 from django.core.exceptions import ValidationError
 from appointments.models import Appointment, AppointmentAttachment, NoteTemplate
+from doctors.models import Doctor
+from authentication.models import User
 from ckeditor.widgets import CKEditorWidget
 
 
@@ -148,3 +150,143 @@ class NoteTemplateForm(forms.ModelForm):
     class Meta:
         model = NoteTemplate
         fields = ['name', 'description', 'content', 'category', 'is_active']
+
+
+class DoctorProfileForm(forms.ModelForm):
+    """Formularz do edycji profilu lekarza"""
+
+    # Pola z modelu User
+    first_name = forms.CharField(
+        max_length=150,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Imię'
+        }),
+        label='Imię'
+    )
+
+    last_name = forms.CharField(
+        max_length=150,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Nazwisko'
+        }),
+        label='Nazwisko'
+    )
+
+    email = forms.EmailField(
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'email@example.com'
+        }),
+        label='Email'
+    )
+
+    phone_number = forms.CharField(
+        max_length=15,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': '+48 123 456 789'
+        }),
+        label='Numer telefonu'
+    )
+
+    class Meta:
+        model = Doctor
+        fields = [
+            'specialization', 'years_of_experience', 'office_address',
+            'consultation_fee', 'working_hours_start', 'working_hours_end',
+            'working_days', 'education', 'certifications', 'bio',
+            'is_accepting_patients'
+        ]
+        widgets = {
+            'specialization': forms.Select(attrs={'class': 'form-control'}),
+            'years_of_experience': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '0',
+                'placeholder': 'Liczba lat'
+            }),
+            'office_address': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Adres gabinetu...'
+            }),
+            'consultation_fee': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'min': '0',
+                'placeholder': '0.00'
+            }),
+            'working_hours_start': forms.TimeInput(attrs={
+                'class': 'form-control',
+                'type': 'time'
+            }),
+            'working_hours_end': forms.TimeInput(attrs={
+                'class': 'form-control',
+                'type': 'time'
+            }),
+            'working_days': forms.Select(attrs={'class': 'form-control'}),
+            'education': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 4,
+                'placeholder': 'Wykształcenie, uczelnie, tytuły naukowe...'
+            }),
+            'certifications': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Certyfikaty, kursy, specjalizacje...'
+            }),
+            'bio': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 4,
+                'placeholder': 'Krótki opis o sobie, zainteresowania zawodowe...'
+            }),
+            'is_accepting_patients': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+        }
+        labels = {
+            'specialization': 'Specjalizacja',
+            'years_of_experience': 'Lata doświadczenia',
+            'office_address': 'Adres gabinetu',
+            'consultation_fee': 'Cena konsultacji (zł)',
+            'working_hours_start': 'Godzina rozpoczęcia pracy',
+            'working_hours_end': 'Godzina zakończenia pracy',
+            'working_days': 'Dni pracy',
+            'education': 'Wykształcenie',
+            'certifications': 'Certyfikaty',
+            'bio': 'Biografia',
+            'is_accepting_patients': 'Przyjmuję nowych pacjentów',
+        }
+
+    def __init__(self, *args, **kwargs):
+        # Extract user instance if provided
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+
+        # Populate user fields if user is provided
+        if self.user:
+            self.fields['first_name'].initial = self.user.first_name
+            self.fields['last_name'].initial = self.user.last_name
+            self.fields['email'].initial = self.user.email
+            self.fields['phone_number'].initial = self.user.phone_number
+
+    def save(self, commit=True):
+        """Save both Doctor and User instances"""
+        doctor = super().save(commit=False)
+
+        # Update user fields
+        if self.user:
+            self.user.first_name = self.cleaned_data['first_name']
+            self.user.last_name = self.cleaned_data['last_name']
+            self.user.email = self.cleaned_data['email']
+            self.user.phone_number = self.cleaned_data['phone_number']
+
+            if commit:
+                self.user.save()
+
+        if commit:
+            doctor.save()
+
+        return doctor

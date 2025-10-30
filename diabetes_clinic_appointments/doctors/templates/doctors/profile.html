@@ -1,0 +1,269 @@
+{% extends 'authentication/base.html' %}
+
+{% block title %}Profil Lekarza - Klinika Diabetologiczna{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header with breadcrumb -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'doctors:dashboard' %}">
+                            <i class="fas fa-home"></i> Panel Lekarza
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item active" aria-current="page">Profil</li>
+                </ol>
+            </nav>
+
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="display-6 mb-2">Profil Lekarza</h1>
+                    <p class="text-muted mb-0">Dr. {{ user.first_name }} {{ user.last_name }}</p>
+                </div>
+                <div>
+                    <a href="{% url 'doctors:edit_profile' %}" class="btn btn-primary me-2">
+                        <i class="fas fa-edit"></i> Edytuj profil
+                    </a>
+                    <a href="{% url 'doctors:dashboard' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Powrót
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Messages -->
+    {% if messages %}
+        <div class="row mb-4">
+            <div class="col-12">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Profile Information -->
+    <div class="row">
+        <!-- Personal Information -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-user"></i> Dane Osobowe</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-4 text-muted">
+                            <strong>Imię:</strong>
+                        </div>
+                        <div class="col-8">
+                            {{ user.first_name }}
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-4 text-muted">
+                            <strong>Nazwisko:</strong>
+                        </div>
+                        <div class="col-8">
+                            {{ user.last_name }}
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-4 text-muted">
+                            <strong>Email:</strong>
+                        </div>
+                        <div class="col-8">
+                            <a href="mailto:{{ user.email }}">{{ user.email }}</a>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-4 text-muted">
+                            <strong>Telefon:</strong>
+                        </div>
+                        <div class="col-8">
+                            {% if user.phone_number %}
+                                <a href="tel:{{ user.phone_number }}">{{ user.phone_number }}</a>
+                            {% else %}
+                                <span class="text-muted">Nie podano</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4 text-muted">
+                            <strong>Login:</strong>
+                        </div>
+                        <div class="col-8">
+                            {{ user.username }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Professional Information -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-user-md"></i> Informacje Zawodowe</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-5 text-muted">
+                            <strong>Numer licencji:</strong>
+                        </div>
+                        <div class="col-7">
+                            {{ doctor.license_number }}
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-5 text-muted">
+                            <strong>Specjalizacja:</strong>
+                        </div>
+                        <div class="col-7">
+                            {{ doctor.get_specialization_display }}
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-5 text-muted">
+                            <strong>Doświadczenie:</strong>
+                        </div>
+                        <div class="col-7">
+                            {{ doctor.years_of_experience }} lat
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-5 text-muted">
+                            <strong>Cena konsultacji:</strong>
+                        </div>
+                        <div class="col-7">
+                            {{ doctor.consultation_fee }} zł
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-5 text-muted">
+                            <strong>Status:</strong>
+                        </div>
+                        <div class="col-7">
+                            {% if doctor.is_accepting_patients %}
+                                <span class="badge bg-success">Przyjmuje pacjentów</span>
+                            {% else %}
+                                <span class="badge bg-danger">Nie przyjmuje pacjentów</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Working Hours -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-clock"></i> Godziny Pracy</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-5 text-muted">
+                            <strong>Dni pracy:</strong>
+                        </div>
+                        <div class="col-7">
+                            {{ doctor.get_working_days_display }}
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-5 text-muted">
+                            <strong>Godziny:</strong>
+                        </div>
+                        <div class="col-7">
+                            {{ doctor.working_hours_start|time:"H:i" }} - {{ doctor.working_hours_end|time:"H:i" }}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-5 text-muted">
+                            <strong>Adres gabinetu:</strong>
+                        </div>
+                        <div class="col-7">
+                            {{ doctor.office_address|linebreaks }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Biography and Education -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning">
+                    <h5 class="mb-0"><i class="fas fa-graduation-cap"></i> Wykształcenie i Biografia</h5>
+                </div>
+                <div class="card-body">
+                    <h6 class="text-muted mb-2">Wykształcenie:</h6>
+                    <p>{{ doctor.education|linebreaks }}</p>
+
+                    {% if doctor.certifications %}
+                        <hr>
+                        <h6 class="text-muted mb-2">Certyfikaty:</h6>
+                        <p>{{ doctor.certifications|linebreaks }}</p>
+                    {% endif %}
+
+                    {% if doctor.bio %}
+                        <hr>
+                        <h6 class="text-muted mb-2">Biografia:</h6>
+                        <p>{{ doctor.bio|linebreaks }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Account Info -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Informacje o Koncie</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="text-muted small">Data utworzenia konta:</div>
+                            <div>{{ doctor.created_at|date:"d.m.Y H:i" }}</div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="text-muted small">Ostatnia aktualizacja:</div>
+                            <div>{{ doctor.updated_at|date:"d.m.Y H:i" }}</div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="text-muted small">Typ konta:</div>
+                            <div><span class="badge bg-primary">Lekarz</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    border: none;
+}
+
+.card-header {
+    border: none;
+}
+
+.row.mb-3:last-child {
+    margin-bottom: 0 !important;
+}
+</style>
+
+{% endblock %}

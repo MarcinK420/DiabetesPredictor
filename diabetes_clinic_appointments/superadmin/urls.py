@@ -6,6 +6,7 @@ app_name = 'superadmin'
 urlpatterns = [
     path('', views.dashboard, name='dashboard'),
     path('users/', views.user_list, name='user_list'),
+    path('doctors/create/', views.create_doctor, name='create_doctor'),
     path('users/<int:user_id>/', views.user_detail, name='user_detail'),
     path('users/<int:user_id>/toggle-status/', views.toggle_user_status, name='toggle_user_status'),
     path('users/<int:user_id>/unlock/', views.unlock_user_account, name='unlock_user_account'),
