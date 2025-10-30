@@ -5,7 +5,9 @@ from django.utils import timezone
 from django.core.paginator import Paginator
 from django.db.models import Count, Q
 from django.http import Http404, JsonResponse, FileResponse, HttpResponseForbidden
-from .forms import AppointmentNotesForm, AppointmentAttachmentForm, NoteTemplateForm, DoctorProfileForm
+from .forms import AppointmentNotesForm, AppointmentAttachmentForm, NoteTemplateForm, DoctorProfileForm, DiabetesPredictionForm
+import sys
+import os
 
 @login_required
 def dashboard(request):
@@ -712,3 +714,112 @@ def edit_profile(request):
     }
 
     return render(request, 'doctors/edit_profile.html', context)
+
+
+# ============================================
+# Diabetes Risk Prediction Views
+# ============================================
+
+@login_required
+def diabetes_risk_assessment(request, appointment_id):
+    """Widok do oceny ryzyka cukrzycy dla zakończonej wizyty"""
+    if not request.user.is_doctor():
+        return redirect('authentication:login')
+
+    doctor = request.user.doctor_profile
+
+    # Get appointment and verify doctor has access
+    from appointments.models import Appointment, DiabetesPrediction
+
+    appointment = get_object_or_404(Appointment, id=appointment_id)
+
+    # Verify this appointment belongs to this doctor
+    if appointment.doctor != doctor:
+        raise Http404("Nie masz uprawnień do tej wizyty.")
+
+    # Check if appointment is completed
+    if appointment.status != 'completed':
+        messages.warning(request, 'Ocena ryzyka jest dostępna tylko dla zakończonych wizyt.')
+        return redirect('doctors:patient_detail', patient_id=appointment.patient.id)
+
+    # Check if prediction already exists
+    existing_prediction = None
+    try:
+        existing_prediction = DiabetesPrediction.objects.get(appointment=appointment)
+    except DiabetesPrediction.DoesNotExist:
+        pass
+
+    # Handle form submission
+    if request.method == 'POST':
+        form = DiabetesPredictionForm(request.POST, instance=existing_prediction)
+        if form.is_valid():
+            # Get form data
+            patient_data = {
+                'pregnancies': form.cleaned_data['pregnancies'],
+                'glucose': form.cleaned_data['glucose'],
+                'blood_pressure': form.cleaned_data['blood_pressure'],
+                'skin_thickness': form.cleaned_data['skin_thickness'],
+                'insulin': form.cleaned_data['insulin'],
+                'bmi': form.cleaned_data['bmi'],
+                'diabetes_pedigree': form.cleaned_data['diabetes_pedigree'],
+                'age': form.cleaned_data['age'],
+            }
+
+            # Import and use the predictor
+            sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'ml'))
+            from diabetes_predictor import DiabetesPredictor
+
+            try:
+                # Initialize predictor and get prediction
+                predictor = DiabetesPredictor()
+                result = predictor.predict_with_interpretation(patient_data)
+
+                # Save prediction
+                prediction = form.save(commit=False)
+                prediction.appointment = appointment
+                prediction.probability = result['probability']
+                prediction.percentage = result['percentage']
+                prediction.risk_level = result['risk_level']
+                prediction.risk_color = result['risk_color']
+                prediction.created_by = doctor
+                prediction.save()
+
+                messages.success(request, 'Ocena ryzyka cukrzycy została wygenerowana pomyślnie!')
+
+                # Redirect to show results
+                context = {
+                    'doctor': doctor,
+                    'appointment': appointment,
+                    'patient': appointment.patient,
+                    'form': form,
+                    'prediction': prediction,
+                    'show_results': True,
+                }
+                return render(request, 'doctors/diabetes_risk_assessment.html', context)
+
+            except Exception as e:
+                messages.error(request, f'Błąd podczas generowania predykcji: {str(e)}')
+                form = DiabetesPredictionForm(instance=existing_prediction)
+        else:
+            messages.error(request, 'Wystąpiły błędy w formularzu. Sprawdź wprowadzone dane.')
+    else:
+        # GET request - initialize form
+        if existing_prediction:
+            form = DiabetesPredictionForm(instance=existing_prediction)
+        else:
+            # Pre-fill age from patient data if available
+            initial_data = {}
+            if hasattr(appointment.patient, 'get_age'):
+                initial_data['age'] = appointment.patient.get_age()
+            form = DiabetesPredictionForm(initial=initial_data)
+
+    context = {
+        'doctor': doctor,
+        'appointment': appointment,
+        'patient': appointment.patient,
+        'form': form,
+        'prediction': existing_prediction,
+        'show_results': False,
+    }
+
+    return render(request, 'doctors/diabetes_risk_assessment.html', context)

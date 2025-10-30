@@ -237,3 +237,93 @@ class NoteTemplate(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.get_category_display()})"
+
+
+class DiabetesPrediction(models.Model):
+    """Model do przechowywania wyników predykcji ryzyka cukrzycy"""
+
+    appointment = models.OneToOneField(
+        Appointment,
+        on_delete=models.CASCADE,
+        related_name='diabetes_prediction',
+        verbose_name='Wizyta'
+    )
+
+    # Dane wejściowe do modelu ML
+    pregnancies = models.PositiveIntegerField(
+        verbose_name='Liczba ciąż',
+        help_text='Liczba ciąż (0 dla mężczyzn)'
+    )
+    glucose = models.FloatField(
+        verbose_name='Poziom glukozy',
+        help_text='Poziom glukozy we krwi (mg/dL)'
+    )
+    blood_pressure = models.FloatField(
+        verbose_name='Ciśnienie krwi',
+        help_text='Skurczowe ciśnienie krwi (mm Hg)'
+    )
+    skin_thickness = models.FloatField(
+        verbose_name='Grubość fałdu skórnego',
+        help_text='Grubość fałdu skórnego tricepsa (mm)'
+    )
+    insulin = models.FloatField(
+        verbose_name='Poziom insuliny',
+        help_text='Insulina w surowicy (μU/ml)'
+    )
+    bmi = models.FloatField(
+        verbose_name='BMI',
+        help_text='Wskaźnik masy ciała (kg/m²)'
+    )
+    diabetes_pedigree = models.FloatField(
+        verbose_name='Funkcja rodowodu cukrzycy',
+        help_text='Funkcja rodowodu cukrzycy (0.0 - 2.5)'
+    )
+    age = models.PositiveIntegerField(
+        verbose_name='Wiek',
+        help_text='Wiek pacjenta w latach'
+    )
+
+    # Wyniki predykcji
+    probability = models.FloatField(
+        verbose_name='Prawdopodobieństwo',
+        help_text='Prawdopodobieństwo cukrzycy (0.0 - 1.0)'
+    )
+    percentage = models.FloatField(
+        verbose_name='Procent',
+        help_text='Prawdopodobieństwo w procentach'
+    )
+    risk_level = models.CharField(
+        max_length=20,
+        verbose_name='Poziom ryzyka',
+        choices=[
+            ('niskie', 'Niskie'),
+            ('umiarkowane', 'Umiarkowane'),
+            ('wysokie', 'Wysokie'),
+            ('bardzo wysokie', 'Bardzo wysokie'),
+        ]
+    )
+    risk_color = models.CharField(
+        max_length=10,
+        verbose_name='Kolor ryzyka',
+        help_text='Kolor dla wizualizacji (green, yellow, orange, red)'
+    )
+
+    # Metadata
+    created_by = models.ForeignKey(
+        Doctor,
+        on_delete=models.SET_NULL,
+        null=True,
+        verbose_name='Utworzone przez'
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Data utworzenia'
+    )
+
+    class Meta:
+        verbose_name = "Predykcja cukrzycy"
+        verbose_name_plural = "Predykcje cukrzycy"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Predykcja dla {self.appointment} - Ryzyko: {self.risk_level} ({self.percentage:.1f}%)"

@@ -438,6 +438,18 @@
                                                        title="Edytuj notatki z wizyty">
                                                         <i class="fas fa-edit"></i> {% if appointment.notes %}Edytuj{% else %}Dodaj{% endif %}
                                                     </a>
+                                                    {% if appointment.status == 'completed' %}
+                                                        <a href="{% url 'doctors:diabetes_risk_assessment' appointment.id %}"
+                                                           class="btn btn-sm btn-success"
+                                                           title="Ocena ryzyka cukrzycy">
+                                                            <i class="fas fa-chart-line"></i>
+                                                            {% if appointment.diabetes_prediction %}
+                                                                Wynik
+                                                            {% else %}
+                                                                Ocena ML
+                                                            {% endif %}
+                                                        </a>
+                                                    {% endif %}
                                                 </div>
                                             </td>
                                         </tr>

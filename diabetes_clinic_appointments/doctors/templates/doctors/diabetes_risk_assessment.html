@@ -1,0 +1,449 @@
+{% extends 'authentication/base.html' %}
+
+{% block title %}Ocena Ryzyka Cukrzycy - Klinika Diabetologiczna{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header with breadcrumb -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'doctors:dashboard' %}">
+                            <i class="fas fa-home"></i> Panel Lekarza
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'doctors:patient_detail' patient.id %}">
+                            <i class="fas fa-user"></i> {{ patient.user.first_name }} {{ patient.user.last_name }}
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item active" aria-current="page">Ocena Ryzyka Cukrzycy</li>
+                </ol>
+            </nav>
+
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="display-6 mb-2">
+                        <i class="fas fa-chart-line text-primary"></i>
+                        Ocena Ryzyka Cukrzycy
+                    </h1>
+                    <p class="text-muted mb-0">
+                        Pacjent: {{ patient.user.first_name }} {{ patient.user.last_name }} |
+                        Wizyta: {{ appointment.appointment_date|date:"j F Y, H:i" }}
+                    </p>
+                </div>
+                <div>
+                    <a href="{% url 'doctors:patient_detail' patient.id %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Powrót do karty pacjenta
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Messages -->
+    {% if messages %}
+        <div class="row mb-4">
+            <div class="col-12">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Results Section (shown after prediction) -->
+    {% if prediction and show_results %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-{{ prediction.risk_color }} shadow-lg">
+                <div class="card-header bg-{{ prediction.risk_color }} text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-clipboard-check"></i>
+                        Wynik Oceny Ryzyka
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="text-center mb-4">
+                                <h2 class="display-4 mb-3">
+                                    <span class="badge bg-{{ prediction.risk_color }} text-white" style="font-size: 3rem;">
+                                        {{ prediction.percentage|floatformat:1 }}%
+                                    </span>
+                                </h2>
+                                <h3 class="text-{{ prediction.risk_color }}">
+                                    Ryzyko {{ prediction.get_risk_level_display }}
+                                </h3>
+                            </div>
+
+                            <!-- Risk level interpretation -->
+                            <div class="alert alert-{{ prediction.risk_color }} border-{{ prediction.risk_color }}">
+                                <h6 class="alert-heading">
+                                    <i class="fas fa-info-circle"></i> Interpretacja wyniku
+                                </h6>
+                                {% if prediction.risk_level == 'niskie' %}
+                                    <p class="mb-0">
+                                        Pacjent wykazuje <strong>niskie ryzyko</strong> rozwoju cukrzycy na podstawie
+                                        dostarczonych parametrów. Zaleca się kontynuację regularnych badań kontrolnych
+                                        i zachowanie zdrowego stylu życia.
+                                    </p>
+                                {% elif prediction.risk_level == 'umiarkowane' %}
+                                    <p class="mb-0">
+                                        Pacjent wykazuje <strong>umiarkowane ryzyko</strong> rozwoju cukrzycy.
+                                        Zalecana jest modyfikacja stylu życia (dieta, aktywność fizyczna) oraz
+                                        częstsze monitorowanie poziomu glukozy.
+                                    </p>
+                                {% elif prediction.risk_level == 'wysokie' %}
+                                    <p class="mb-0">
+                                        Pacjent wykazuje <strong>wysokie ryzyko</strong> rozwoju cukrzycy.
+                                        Konieczne jest wdrożenie interwencji behawioralnych, bliskie monitorowanie
+                                        oraz rozważenie profilaktyki farmakologicznej.
+                                    </p>
+                                {% else %}
+                                    <p class="mb-0">
+                                        Pacjent wykazuje <strong>bardzo wysokie ryzyko</strong> rozwoju cukrzycy.
+                                        Wymaga pilnej interwencji medycznej, szczegółowych badań diagnostycznych
+                                        i prawdopodobnie wczesnego leczenia farmakologicznego.
+                                    </p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <h5 class="mb-3">Wprowadzone dane:</h5>
+                            <table class="table table-sm table-bordered">
+                                <tbody>
+                                    <tr>
+                                        <th width="60%">Liczba ciąż:</th>
+                                        <td>{{ prediction.pregnancies }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Poziom glukozy:</th>
+                                        <td>{{ prediction.glucose }} mg/dL</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Ciśnienie skurczowe:</th>
+                                        <td>{{ prediction.blood_pressure }} mm Hg</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Grubość fałdu skórnego:</th>
+                                        <td>{{ prediction.skin_thickness }} mm</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Poziom insuliny:</th>
+                                        <td>{{ prediction.insulin }} μU/ml</td>
+                                    </tr>
+                                    <tr>
+                                        <th>BMI:</th>
+                                        <td>{{ prediction.bmi }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Funkcja rodowodu cukrzycy:</th>
+                                        <td>{{ prediction.diabetes_pedigree }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Wiek:</th>
+                                        <td>{{ prediction.age }} lat</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <div class="mt-3">
+                                <small class="text-muted">
+                                    <i class="fas fa-clock"></i> Wygenerowano: {{ prediction.created_at|date:"j F Y, H:i" }}
+                                    {% if prediction.created_by %}
+                                    <br>
+                                    <i class="fas fa-user-md"></i> Przez: Dr. {{ prediction.created_by.user.last_name }}
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-12 text-center">
+                            <a href="{% url 'doctors:patient_detail' patient.id %}" class="btn btn-primary btn-lg">
+                                <i class="fas fa-check"></i> Powrót do karty pacjenta
+                            </a>
+                            <a href="{% url 'doctors:diabetes_risk_assessment' appointment.id %}" class="btn btn-outline-secondary btn-lg">
+                                <i class="fas fa-redo"></i> Nowa ocena
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- Input Form Section -->
+    <div class="row">
+        <div class="col-lg-8 offset-lg-2">
+            {% if prediction %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                <strong>Uwaga:</strong> Istnieje już wcześniejsza ocena ryzyka dla tej wizyty
+                ({{ prediction.risk_level }}, {{ prediction.percentage|floatformat:1 }}%).
+                Wypełnienie formularza ponownie nadpisze poprzednie wyniki.
+            </div>
+            {% endif %}
+
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-file-medical"></i>
+                        Wprowadź Wyniki Badań
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-4">
+                        Wprowadź wyniki badań pacjenta. Algorytm uczenia maszynowego przeanalizuje
+                        dane i oszacuje ryzyko rozwoju cukrzycy.
+                    </p>
+
+                    <form method="post" id="diabetes-form">
+                        {% csrf_token %}
+
+                        <div class="row">
+                            <!-- Left Column -->
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.pregnancies.id_for_label }}" class="form-label">
+                                        {{ form.pregnancies.label }}
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.pregnancies }}
+                                    <small class="form-text text-muted">{{ form.pregnancies.help_text }}</small>
+                                    {% if form.pregnancies.errors %}
+                                        <div class="text-danger small">{{ form.pregnancies.errors }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.glucose.id_for_label }}" class="form-label">
+                                        {{ form.glucose.label }}
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.glucose }}
+                                    <small class="form-text text-muted">{{ form.glucose.help_text }}</small>
+                                    {% if form.glucose.errors %}
+                                        <div class="text-danger small">{{ form.glucose.errors }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.blood_pressure.id_for_label }}" class="form-label">
+                                        {{ form.blood_pressure.label }}
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.blood_pressure }}
+                                    <small class="form-text text-muted">{{ form.blood_pressure.help_text }}</small>
+                                    {% if form.blood_pressure.errors %}
+                                        <div class="text-danger small">{{ form.blood_pressure.errors }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.skin_thickness.id_for_label }}" class="form-label">
+                                        {{ form.skin_thickness.label }}
+                                    </label>
+                                    {{ form.skin_thickness }}
+                                    <small class="form-text text-muted">{{ form.skin_thickness.help_text }}</small>
+                                    {% if form.skin_thickness.errors %}
+                                        <div class="text-danger small">{{ form.skin_thickness.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Right Column -->
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.insulin.id_for_label }}" class="form-label">
+                                        {{ form.insulin.label }}
+                                    </label>
+                                    {{ form.insulin }}
+                                    <small class="form-text text-muted">{{ form.insulin.help_text }}</small>
+                                    {% if form.insulin.errors %}
+                                        <div class="text-danger small">{{ form.insulin.errors }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.bmi.id_for_label }}" class="form-label">
+                                        {{ form.bmi.label }}
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.bmi }}
+                                    <small class="form-text text-muted">{{ form.bmi.help_text }}</small>
+                                    {% if form.bmi.errors %}
+                                        <div class="text-danger small">{{ form.bmi.errors }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.diabetes_pedigree.id_for_label }}" class="form-label">
+                                        {{ form.diabetes_pedigree.label }}
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.diabetes_pedigree }}
+                                    <small class="form-text text-muted">{{ form.diabetes_pedigree.help_text }}</small>
+                                    {% if form.diabetes_pedigree.errors %}
+                                        <div class="text-danger small">{{ form.diabetes_pedigree.errors }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.age.id_for_label }}" class="form-label">
+                                        {{ form.age.label }}
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.age }}
+                                    <small class="form-text text-muted">{{ form.age.help_text }}</small>
+                                    {% if form.age.errors %}
+                                        <div class="text-danger small">{{ form.age.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div class="row">
+                            <div class="col-12">
+                                <p class="text-muted small mb-3">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                    <strong>Uwaga:</strong> Pola oznaczone <span class="text-danger">*</span> są wymagane.
+                                    Opcjonalne pola można pozostawić jako 0 jeśli dane nie są dostępne.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-calculator"></i> Wygeneruj Wstępną Ocenę
+                            </button>
+                            <a href="{% url 'doctors:patient_detail' patient.id %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times"></i> Anuluj
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Info Box -->
+            <div class="card mt-4 border-info">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-lightbulb"></i> O tym narzędziu
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2">
+                        To narzędzie wykorzystuje algorytm uczenia maszynowego wytrenowany na danych medycznych
+                        do oszacowania ryzyka rozwoju cukrzycy typu 2.
+                    </p>
+                    <p class="mb-0">
+                        <strong>Uwaga:</strong> Wynik jest jedynie wstępną oceną i nie zastępuje pełnej diagnozy
+                        medycznej. Zawsze należy go interpretować w kontekście pełnego obrazu klinicznego pacjenta.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.breadcrumb {
+    background-color: transparent;
+    padding: 0;
+}
+
+.card {
+    transition: box-shadow 0.15s ease-in-out;
+}
+
+.form-label {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.bg-green {
+    background-color: #28a745 !important;
+}
+
+.text-green {
+    color: #28a745 !important;
+}
+
+.border-green {
+    border-color: #28a745 !important;
+}
+
+.alert-green {
+    color: #155724;
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+}
+
+.bg-yellow {
+    background-color: #ffc107 !important;
+}
+
+.text-yellow {
+    color: #856404 !important;
+}
+
+.border-yellow {
+    border-color: #ffc107 !important;
+}
+
+.alert-yellow {
+    color: #856404;
+    background-color: #fff3cd;
+    border-color: #ffeaa7;
+}
+
+.bg-orange {
+    background-color: #fd7e14 !important;
+}
+
+.text-orange {
+    color: #fd7e14 !important;
+}
+
+.border-orange {
+    border-color: #fd7e14 !important;
+}
+
+.alert-orange {
+    color: #8a4d00;
+    background-color: #ffe5d0;
+    border-color: #ffd0a6;
+}
+
+.bg-red {
+    background-color: #dc3545 !important;
+}
+
+.text-red {
+    color: #dc3545 !important;
+}
+
+.border-red {
+    border-color: #dc3545 !important;
+}
+
+.alert-red {
+    color: #721c24;
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+}
+</style>
+
+{% endblock %}
