@@ -823,3 +823,51 @@ def diabetes_risk_assessment(request, appointment_id):
     }
 
     return render(request, 'doctors/diabetes_risk_assessment.html', context)
+
+
+@login_required
+def update_appointment_status(request, appointment_id):
+    """AJAX endpoint do szybkiej zmiany statusu wizyty"""
+    if not request.user.is_doctor():
+        return JsonResponse({'success': False, 'error': 'Brak uprawnień'}, status=403)
+
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Metoda nie dozwolona'}, status=405)
+
+    doctor = request.user.doctor_profile
+
+    from appointments.models import Appointment
+    appointment = get_object_or_404(Appointment, id=appointment_id)
+
+    # Verify this appointment belongs to this doctor
+    if appointment.doctor != doctor:
+        return JsonResponse({'success': False, 'error': 'Brak uprawnień do tej wizyty'}, status=403)
+
+    # Get new status from request
+    import json
+    try:
+        data = json.loads(request.body)
+        new_status = data.get('status')
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Nieprawidłowe dane'}, status=400)
+
+    # Validate status
+    valid_statuses = [choice[0] for choice in Appointment.STATUS_CHOICES]
+    if new_status not in valid_statuses:
+        return JsonResponse({'success': False, 'error': 'Nieprawidłowy status'}, status=400)
+
+    # Update status
+    old_status = appointment.status
+    appointment.status = new_status
+    appointment.save()
+
+    # Get display name for new status
+    status_display = dict(Appointment.STATUS_CHOICES)[new_status]
+
+    return JsonResponse({
+        'success': True,
+        'old_status': old_status,
+        'new_status': new_status,
+        'status_display': status_display,
+        'message': f'Status wizyty zmieniony na: {status_display}'
+    })
