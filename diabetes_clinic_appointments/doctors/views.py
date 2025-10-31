@@ -758,6 +758,18 @@ def diabetes_risk_assessment(request, appointment_id):
     except DiabetesPrediction.DoesNotExist:
         pass
 
+    # If prediction exists and this is a GET request, show results directly
+    if existing_prediction and request.method == 'GET':
+        context = {
+            'doctor': doctor,
+            'appointment': appointment,
+            'patient': appointment.patient,
+            'form': DiabetesPredictionForm(instance=existing_prediction),
+            'prediction': existing_prediction,
+            'show_results': True,
+        }
+        return render(request, 'doctors/diabetes_risk_assessment.html', context)
+
     # Handle form submission
     if request.method == 'POST':
         form = DiabetesPredictionForm(request.POST, instance=existing_prediction)
@@ -812,15 +824,12 @@ def diabetes_risk_assessment(request, appointment_id):
         else:
             messages.error(request, 'Wystąpiły błędy w formularzu. Sprawdź wprowadzone dane.')
     else:
-        # GET request - initialize form
-        if existing_prediction:
-            form = DiabetesPredictionForm(instance=existing_prediction)
-        else:
-            # Pre-fill age from patient data if available
-            initial_data = {}
-            if hasattr(appointment.patient, 'get_age'):
-                initial_data['age'] = appointment.patient.get_age()
-            form = DiabetesPredictionForm(initial=initial_data)
+        # GET request - initialize form (only if no prediction exists)
+        # Pre-fill age from patient data if available
+        initial_data = {}
+        if hasattr(appointment.patient, 'get_age'):
+            initial_data['age'] = appointment.patient.get_age()
+        form = DiabetesPredictionForm(initial=initial_data)
 
     context = {
         'doctor': doctor,
