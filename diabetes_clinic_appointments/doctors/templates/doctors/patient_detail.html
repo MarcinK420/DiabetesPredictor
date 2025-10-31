@@ -562,107 +562,87 @@
                             </h5>
                         </div>
                         <div class="card-body">
-                            {% if patient.appointments.all %}
-                                {% with predictions=patient.appointments.all|dictsort:"appointment_date" %}
-                                    {% if predictions %}
-                                        <div class="row">
-                                            {% for appointment in predictions %}
-                                                {% if appointment.diabetes_prediction %}
-                                                    <div class="col-lg-6 mb-4">
-                                                        <div class="card border-{{ appointment.diabetes_prediction.risk_color }} shadow-sm h-100">
-                                                            <div class="card-header bg-{{ appointment.diabetes_prediction.risk_color }} text-white">
-                                                                <h6 class="mb-0">
-                                                                    <i class="fas fa-calendar"></i>
-                                                                    Wizyta: {{ appointment.appointment_date|date:"j F Y, H:i" }}
-                                                                </h6>
-                                                            </div>
-                                                            <div class="card-body">
-                                                                <!-- Risk Level Display -->
-                                                                <div class="text-center mb-3">
-                                                                    <h3 class="display-6 mb-2">
-                                                                        <span class="badge bg-{{ appointment.diabetes_prediction.risk_color }} text-white" style="font-size: 2rem;">
-                                                                            {{ appointment.diabetes_prediction.percentage|floatformat:1 }}%
-                                                                        </span>
-                                                                    </h3>
-                                                                    <h5 class="text-{{ appointment.diabetes_prediction.risk_color }}">
-                                                                        Ryzyko {{ appointment.diabetes_prediction.get_risk_level_display }}
-                                                                    </h5>
-                                                                </div>
+                            {% if appointments_with_predictions %}
+                                <div class="row">
+                                    {% for appointment in appointments_with_predictions %}
+                                        <div class="col-lg-6 mb-4">
+                                            <div class="card border-{{ appointment.diabetes_prediction.risk_color }} shadow-sm h-100">
+                                                <div class="card-header bg-{{ appointment.diabetes_prediction.risk_color }} text-white">
+                                                    <h6 class="mb-0">
+                                                        <i class="fas fa-calendar"></i>
+                                                        Wizyta: {{ appointment.appointment_date|date:"j F Y, H:i" }}
+                                                    </h6>
+                                                </div>
+                                                <div class="card-body">
+                                                    <!-- Risk Level Display -->
+                                                    <div class="text-center mb-3">
+                                                        <h3 class="display-6 mb-2">
+                                                            <span class="badge bg-{{ appointment.diabetes_prediction.risk_color }} text-white" style="font-size: 2rem;">
+                                                                {{ appointment.diabetes_prediction.percentage|floatformat:1 }}%
+                                                            </span>
+                                                        </h3>
+                                                        <h5 class="text-{{ appointment.diabetes_prediction.risk_color }}">
+                                                            Ryzyko {{ appointment.diabetes_prediction.get_risk_level_display }}
+                                                        </h5>
+                                                    </div>
 
-                                                                <!-- Test Parameters -->
-                                                                <h6 class="border-bottom pb-2 mb-3">
-                                                                    <i class="fas fa-list"></i> Parametry badania:
-                                                                </h6>
-                                                                <div class="row small">
-                                                                    <div class="col-6 mb-2">
-                                                                        <strong>Glukoza:</strong> {{ appointment.diabetes_prediction.glucose }} mg/dL
-                                                                    </div>
-                                                                    <div class="col-6 mb-2">
-                                                                        <strong>BMI:</strong> {{ appointment.diabetes_prediction.bmi }}
-                                                                    </div>
-                                                                    <div class="col-6 mb-2">
-                                                                        <strong>Ciśnienie:</strong> {{ appointment.diabetes_prediction.blood_pressure }} mm Hg
-                                                                    </div>
-                                                                    <div class="col-6 mb-2">
-                                                                        <strong>Wiek:</strong> {{ appointment.diabetes_prediction.age }} lat
-                                                                    </div>
-                                                                    <div class="col-6 mb-2">
-                                                                        <strong>Insulina:</strong> {{ appointment.diabetes_prediction.insulin }} μU/ml
-                                                                    </div>
-                                                                    <div class="col-6 mb-2">
-                                                                        <strong>Rodowód:</strong> {{ appointment.diabetes_prediction.diabetes_pedigree|floatformat:3 }}
-                                                                    </div>
-                                                                </div>
-
-                                                                <!-- Metadata -->
-                                                                <div class="mt-3 pt-2 border-top">
-                                                                    <small class="text-muted">
-                                                                        <i class="fas fa-clock"></i>
-                                                                        {{ appointment.diabetes_prediction.created_at|date:"j F Y, H:i" }}
-                                                                        {% if appointment.diabetes_prediction.created_by %}
-                                                                            | <i class="fas fa-user-md"></i>
-                                                                            Dr. {{ appointment.diabetes_prediction.created_by.user.last_name }}
-                                                                        {% endif %}
-                                                                    </small>
-                                                                </div>
-
-                                                                <!-- Action Button -->
-                                                                <div class="mt-3">
-                                                                    <a href="{% url 'doctors:diabetes_risk_assessment' appointment.id %}"
-                                                                       class="btn btn-sm btn-outline-primary w-100">
-                                                                        <i class="fas fa-eye"></i> Zobacz szczegóły
-                                                                    </a>
-                                                                </div>
-                                                            </div>
+                                                    <!-- Test Parameters -->
+                                                    <h6 class="border-bottom pb-2 mb-3">
+                                                        <i class="fas fa-list"></i> Parametry badania:
+                                                    </h6>
+                                                    <div class="row small">
+                                                        <div class="col-6 mb-2">
+                                                            <strong>Glukoza:</strong> {{ appointment.diabetes_prediction.glucose }} mg/dL
+                                                        </div>
+                                                        <div class="col-6 mb-2">
+                                                            <strong>BMI:</strong> {{ appointment.diabetes_prediction.bmi }}
+                                                        </div>
+                                                        <div class="col-6 mb-2">
+                                                            <strong>Ciśnienie:</strong> {{ appointment.diabetes_prediction.blood_pressure }} mm Hg
+                                                        </div>
+                                                        <div class="col-6 mb-2">
+                                                            <strong>Wiek:</strong> {{ appointment.diabetes_prediction.age }} lat
+                                                        </div>
+                                                        <div class="col-6 mb-2">
+                                                            <strong>Insulina:</strong> {{ appointment.diabetes_prediction.insulin }} μU/ml
+                                                        </div>
+                                                        <div class="col-6 mb-2">
+                                                            <strong>Rodowód:</strong> {{ appointment.diabetes_prediction.diabetes_pedigree|floatformat:3 }}
                                                         </div>
                                                     </div>
-                                                {% endif %}
-                                            {% endfor %}
-                                        </div>
 
-                                        {% if not patient.appointments.all|selectattr:"diabetes_prediction" %}
-                                            <div class="alert alert-info text-center">
-                                                <i class="fas fa-info-circle fa-2x mb-3"></i>
-                                                <h5>Brak wyników badań ML</h5>
-                                                <p class="mb-0">Nie przeprowadzono jeszcze żadnej oceny ryzyka cukrzycy dla tego pacjenta.</p>
-                                                <p class="mt-2">
-                                                    <small>Ocena ryzyka jest dostępna dla zakończonych wizyt.</small>
-                                                </p>
+                                                    <!-- Metadata -->
+                                                    <div class="mt-3 pt-2 border-top">
+                                                        <small class="text-muted">
+                                                            <i class="fas fa-clock"></i>
+                                                            {{ appointment.diabetes_prediction.created_at|date:"j F Y, H:i" }}
+                                                            {% if appointment.diabetes_prediction.created_by %}
+                                                                | <i class="fas fa-user-md"></i>
+                                                                Dr. {{ appointment.diabetes_prediction.created_by.user.last_name }}
+                                                            {% endif %}
+                                                        </small>
+                                                    </div>
+
+                                                    <!-- Action Button -->
+                                                    <div class="mt-3">
+                                                        <a href="{% url 'doctors:diabetes_risk_assessment' appointment.id %}"
+                                                           class="btn btn-sm btn-outline-primary w-100">
+                                                            <i class="fas fa-eye"></i> Zobacz szczegóły
+                                                        </a>
+                                                    </div>
+                                                </div>
                                             </div>
-                                        {% endif %}
-                                    {% else %}
-                                        <div class="alert alert-info text-center">
-                                            <i class="fas fa-info-circle fa-2x mb-3"></i>
-                                            <h5>Brak wyników badań ML</h5>
-                                            <p class="mb-0">Nie przeprowadzono jeszcze żadnej oceny ryzyka cukrzycy dla tego pacjenta.</p>
                                         </div>
-                                    {% endif %}
-                                {% endwith %}
+                                    {% endfor %}
+                                </div>
                             {% else %}
-                                <div class="alert alert-warning text-center">
-                                    <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
-                                    <h5>Brak wizyt</h5>
-                                    <p class="mb-0">Ten pacjent nie ma jeszcze żadnych wizyt.</p>
+                                <div class="alert alert-info text-center">
+                                    <i class="fas fa-info-circle fa-2x mb-3"></i>
+                                    <h5>Brak wyników badań ML</h5>
+                                    <p class="mb-0">Nie przeprowadzono jeszcze żadnej oceny ryzyka cukrzycy dla tego pacjenta.</p>
+                                    <p class="mt-2">
+                                        <small>Ocena ryzyka jest dostępna dla zakończonych wizyt.</small>
+                                    </p>
                                 </div>
                             {% endif %}
                         </div>

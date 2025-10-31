@@ -333,6 +333,14 @@ def patient_detail(request, patient_id):
     if status_filter:
         filter_params += f'&status={status_filter}'
 
+    # Get appointments with ML predictions for the Tests tab
+    from appointments.models import DiabetesPrediction
+    appointments_with_predictions = Appointment.objects.filter(
+        doctor=doctor,
+        patient=patient,
+        diabetes_prediction__isnull=False
+    ).select_related('diabetes_prediction').order_by('-appointment_date')
+
     context = {
         'doctor': doctor,
         'patient': patient,
@@ -348,6 +356,7 @@ def patient_detail(request, patient_id):
         'sort_order': sort_order,
         'status_filter': status_filter,
         'filter_params': filter_params,
+        'appointments_with_predictions': appointments_with_predictions,
     }
 
     return render(request, 'doctors/patient_detail.html', context)
