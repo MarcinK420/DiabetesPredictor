@@ -793,6 +793,17 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentAppointmentId = null;
     const modal = new bootstrap.Modal(document.getElementById('statusChangeModal'));
 
+    // Initialize Bootstrap tabs explicitly
+    const triggerTabList = document.querySelectorAll('#patientTabs button[data-bs-toggle="tab"]');
+    triggerTabList.forEach(triggerEl => {
+        const tabTrigger = new bootstrap.Tab(triggerEl);
+
+        triggerEl.addEventListener('click', function (event) {
+            event.preventDefault();
+            tabTrigger.show();
+        });
+    });
+
     // Handle click on status badge
     document.querySelectorAll('.status-badge-clickable').forEach(badge => {
         badge.addEventListener('click', function() {
