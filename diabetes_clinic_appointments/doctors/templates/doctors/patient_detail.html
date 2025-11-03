@@ -317,29 +317,9 @@
         </div>
     </div>
 
-    <!-- Tabs Navigation -->
-    <div class="row">
+    <!-- Historia Wizyt -->
+    <div class="row mb-4">
         <div class="col-12">
-            <ul class="nav nav-tabs nav-tabs-custom mb-3" id="patientTabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="appointments-tab" data-bs-toggle="tab" data-bs-target="#appointments" type="button" role="tab" aria-controls="appointments" aria-selected="true">
-                        <i class="fas fa-calendar-alt"></i> Historia Wizyt
-                        <span class="badge bg-primary ms-2">{{ total_appointments }}</span>
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="tests-tab" data-bs-toggle="tab" data-bs-target="#tests" type="button" role="tab" aria-controls="tests" aria-selected="false">
-                        <i class="fas fa-flask"></i> Badania
-                        {% if completed_appointments > 0 %}
-                            <span class="badge bg-success ms-2">{{ patient.appointments.filter|length }}</span>
-                        {% endif %}
-                    </button>
-                </li>
-            </ul>
-
-            <div class="tab-content" id="patientTabsContent">
-                <!-- Appointments Tab -->
-                <div class="tab-pane fade show active" id="appointments" role="tabpanel" aria-labelledby="appointments-tab">
                     <div class="card">
                         <div class="card-header">
                             <h5 class="mb-0">
@@ -550,10 +530,12 @@
                 </div>
             </div>
                     </div> <!-- Close appointments card -->
-                </div> <!-- Close appointments tab-pane -->
+        </div>
+    </div>
 
-                <!-- Tests Tab (ML Results) -->
-                <div class="tab-pane fade" id="tests" role="tabpanel" aria-labelledby="tests-tab">
+    <!-- Badania (ML Results) -->
+    <div class="row">
+        <div class="col-12">
                     <div class="card">
                         <div class="card-header bg-success text-white">
                             <h5 class="mb-0">
@@ -647,8 +629,6 @@
                             {% endif %}
                         </div>
                     </div>
-                </div> <!-- Close tests tab-pane -->
-            </div> <!-- Close tab-content -->
         </div>
     </div>
 </div>
@@ -696,20 +676,6 @@
 </div>
 
 <style>
-.nav-tabs-custom .nav-link {
-    font-weight: 500;
-    color: #6c757d;
-}
-
-.nav-tabs-custom .nav-link.active {
-    color: #0d6efd;
-    border-bottom: 3px solid #0d6efd;
-}
-
-.nav-tabs-custom .nav-link:hover {
-    color: #0d6efd;
-}
-
 .status-badge-clickable {
     transition: transform 0.2s, box-shadow 0.2s;
 }
@@ -792,17 +758,6 @@ thead th {
 document.addEventListener('DOMContentLoaded', function() {
     let currentAppointmentId = null;
     const modal = new bootstrap.Modal(document.getElementById('statusChangeModal'));
-
-    // Initialize Bootstrap tabs explicitly
-    const triggerTabList = document.querySelectorAll('#patientTabs button[data-bs-toggle="tab"]');
-    triggerTabList.forEach(triggerEl => {
-        const tabTrigger = new bootstrap.Tab(triggerEl);
-
-        triggerEl.addEventListener('click', function (event) {
-            event.preventDefault();
-            tabTrigger.show();
-        });
-    });
 
     // Handle click on status badge
     document.querySelectorAll('.status-badge-clickable').forEach(badge => {
