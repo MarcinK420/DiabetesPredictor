@@ -1,6 +1,6 @@
 from django import forms
 from django.core.exceptions import ValidationError
-from appointments.models import Appointment, AppointmentAttachment, NoteTemplate
+from appointments.models import Appointment, AppointmentAttachment, NoteTemplate, DiabetesPrediction
 from doctors.models import Doctor
 from authentication.models import User
 from ckeditor.widgets import CKEditorWidget
@@ -290,3 +290,142 @@ class DoctorProfileForm(forms.ModelForm):
             doctor.save()
 
         return doctor
+
+
+class DiabetesPredictionForm(forms.ModelForm):
+    """Formularz do wprowadzania danych do predykcji ryzyka cukrzycy"""
+
+    pregnancies = forms.IntegerField(
+        min_value=0,
+        max_value=20,
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'placeholder': '0',
+            'min': '0',
+            'max': '20'
+        }),
+        label='Liczba ciąż',
+        help_text='Liczba ciąż (0 dla mężczyzn)',
+        initial=0
+    )
+
+    glucose = forms.FloatField(
+        min_value=0,
+        max_value=300,
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'np. 120',
+            'step': '0.1',
+            'min': '0',
+            'max': '300'
+        }),
+        label='Poziom glukozy (mg/dL)',
+        help_text='Poziom glukozy we krwi na czczo'
+    )
+
+    blood_pressure = forms.FloatField(
+        min_value=0,
+        max_value=250,
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'np. 80',
+            'step': '0.1',
+            'min': '0',
+            'max': '250'
+        }),
+        label='Ciśnienie skurczowe (mm Hg)',
+        help_text='Skurczowe ciśnienie krwi'
+    )
+
+    skin_thickness = forms.FloatField(
+        min_value=0,
+        max_value=100,
+        required=False,
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'np. 20 (opcjonalne)',
+            'step': '0.1',
+            'min': '0',
+            'max': '100'
+        }),
+        label='Grubość fałdu skórnego (mm)',
+        help_text='Grubość fałdu skórnego tricepsa (0 jeśli nieznane)',
+        initial=0
+    )
+
+    insulin = forms.FloatField(
+        min_value=0,
+        max_value=900,
+        required=False,
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'np. 80 (opcjonalne)',
+            'step': '0.1',
+            'min': '0',
+            'max': '900'
+        }),
+        label='Poziom insuliny (μU/ml)',
+        help_text='Insulina w surowicy (0 jeśli nieznane)',
+        initial=0
+    )
+
+    bmi = forms.FloatField(
+        min_value=10,
+        max_value=70,
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'np. 25.5',
+            'step': '0.1',
+            'min': '10',
+            'max': '70'
+        }),
+        label='BMI (kg/m²)',
+        help_text='Wskaźnik masy ciała'
+    )
+
+    diabetes_pedigree = forms.FloatField(
+        min_value=0,
+        max_value=2.5,
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'np. 0.5',
+            'step': '0.001',
+            'min': '0',
+            'max': '2.5'
+        }),
+        label='Funkcja rodowodu cukrzycy',
+        help_text='Wskaźnik obciążenia genetycznego (0.0 - 2.5)',
+        initial=0.5
+    )
+
+    age = forms.IntegerField(
+        min_value=1,
+        max_value=120,
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'np. 45',
+            'min': '1',
+            'max': '120'
+        }),
+        label='Wiek (lata)',
+        help_text='Wiek pacjenta w latach'
+    )
+
+    class Meta:
+        model = DiabetesPrediction
+        fields = [
+            'pregnancies', 'glucose', 'blood_pressure', 'skin_thickness',
+            'insulin', 'bmi', 'diabetes_pedigree', 'age'
+        ]
+
+    def clean(self):
+        cleaned_data = super().clean()
+
+        # Ustaw wartości domyślne dla opcjonalnych pól
+        if cleaned_data.get('skin_thickness') is None:
+            cleaned_data['skin_thickness'] = 0
+
+        if cleaned_data.get('insulin') is None:
+            cleaned_data['insulin'] = 0
+
+        return cleaned_data

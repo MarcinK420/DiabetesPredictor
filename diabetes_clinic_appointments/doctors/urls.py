@@ -20,4 +20,8 @@ urlpatterns = [
     path('templates/<int:template_id>/edit/', views.edit_template, name='edit_template'),
     path('templates/<int:template_id>/delete/', views.delete_template, name='delete_template'),
     path('templates/<int:template_id>/content/', views.get_template_content, name='get_template_content'),
+    # Diabetes Risk Assessment
+    path('appointment/<int:appointment_id>/diabetes-risk/', views.diabetes_risk_assessment, name='diabetes_risk_assessment'),
+    # AJAX endpoints
+    path('appointment/<int:appointment_id>/update-status/', views.update_appointment_status, name='update_appointment_status'),
 ]

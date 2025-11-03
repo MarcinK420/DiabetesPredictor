@@ -317,19 +317,19 @@
         </div>
     </div>
 
-    <!-- Appointment History -->
-    <div class="row">
+    <!-- Historia Wizyt -->
+    <div class="row mb-4">
         <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">
-                        <i class="fas fa-history"></i>
-                        Historia wizyt
-                        {% if page_obj.paginator.num_pages > 1 %}
-                            <span class="badge bg-secondary ms-2">Strona {{ page_obj.number }} z {{ page_obj.paginator.num_pages }}</span>
-                        {% endif %}
-                    </h5>
-                </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-history"></i>
+                                Historia wizyt
+                                {% if page_obj.paginator.num_pages > 1 %}
+                                    <span class="badge bg-secondary ms-2">Strona {{ page_obj.number }} z {{ page_obj.paginator.num_pages }}</span>
+                                {% endif %}
+                            </h5>
+                        </div>
                 <div class="card-body p-0">
                     {% if page_obj %}
                         <!-- Filters -->
@@ -407,13 +407,37 @@
                                             </td>
                                             <td>
                                                 {% if appointment.status == 'completed' %}
-                                                    <span class="badge bg-success">{{ appointment.get_status_display }}</span>
+                                                    <span class="badge bg-success status-badge-clickable"
+                                                          data-appointment-id="{{ appointment.id }}"
+                                                          data-current-status="{{ appointment.status }}"
+                                                          title="Kliknij aby zmienić status"
+                                                          style="cursor: pointer;">
+                                                        {{ appointment.get_status_display }}
+                                                    </span>
                                                 {% elif appointment.status == 'scheduled' %}
-                                                    <span class="badge bg-primary">{{ appointment.get_status_display }}</span>
+                                                    <span class="badge bg-primary status-badge-clickable"
+                                                          data-appointment-id="{{ appointment.id }}"
+                                                          data-current-status="{{ appointment.status }}"
+                                                          title="Kliknij aby zmienić status"
+                                                          style="cursor: pointer;">
+                                                        {{ appointment.get_status_display }}
+                                                    </span>
                                                 {% elif appointment.status == 'cancelled' %}
-                                                    <span class="badge bg-warning">{{ appointment.get_status_display }}</span>
+                                                    <span class="badge bg-warning status-badge-clickable"
+                                                          data-appointment-id="{{ appointment.id }}"
+                                                          data-current-status="{{ appointment.status }}"
+                                                          title="Kliknij aby zmienić status"
+                                                          style="cursor: pointer;">
+                                                        {{ appointment.get_status_display }}
+                                                    </span>
                                                 {% else %}
-                                                    <span class="badge bg-danger">{{ appointment.get_status_display }}</span>
+                                                    <span class="badge bg-danger status-badge-clickable"
+                                                          data-appointment-id="{{ appointment.id }}"
+                                                          data-current-status="{{ appointment.status }}"
+                                                          title="Kliknij aby zmienić status"
+                                                          style="cursor: pointer;">
+                                                        {{ appointment.get_status_display }}
+                                                    </span>
                                                 {% endif %}
                                             </td>
                                             <td>{{ appointment.reason|truncatechars:40 }}</td>
@@ -438,6 +462,18 @@
                                                        title="Edytuj notatki z wizyty">
                                                         <i class="fas fa-edit"></i> {% if appointment.notes %}Edytuj{% else %}Dodaj{% endif %}
                                                     </a>
+                                                    {% if appointment.status == 'completed' %}
+                                                        <a href="{% url 'doctors:diabetes_risk_assessment' appointment.id %}"
+                                                           class="btn btn-sm btn-success"
+                                                           title="Ocena ryzyka cukrzycy">
+                                                            <i class="fas fa-chart-line"></i>
+                                                            {% if appointment.diabetes_prediction %}
+                                                                Wynik
+                                                            {% else %}
+                                                                Ocena ML
+                                                            {% endif %}
+                                                        </a>
+                                                    {% endif %}
                                                 </div>
                                             </td>
                                         </tr>
@@ -493,11 +529,171 @@
                     {% endif %}
                 </div>
             </div>
+                    </div> <!-- Close appointments card -->
+        </div>
+    </div>
+
+    <!-- Badania (ML Results) -->
+    <div class="row">
+        <div class="col-12">
+                    <div class="card">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-brain"></i>
+                                Wyniki Oceny Ryzyka Cukrzycy (AI/ML)
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if appointments_with_predictions %}
+                                <div class="row">
+                                    {% for appointment in appointments_with_predictions %}
+                                        <div class="col-lg-6 mb-4">
+                                            <div class="card border-{{ appointment.diabetes_prediction.risk_color }} shadow-sm h-100">
+                                                <div class="card-header bg-{{ appointment.diabetes_prediction.risk_color }} text-white">
+                                                    <h6 class="mb-0">
+                                                        <i class="fas fa-calendar"></i>
+                                                        Wizyta: {{ appointment.appointment_date|date:"j F Y, H:i" }}
+                                                    </h6>
+                                                </div>
+                                                <div class="card-body">
+                                                    <!-- Risk Level Display -->
+                                                    <div class="text-center mb-3">
+                                                        <h3 class="display-6 mb-2">
+                                                            <span class="badge bg-{{ appointment.diabetes_prediction.risk_color }} text-white" style="font-size: 2rem;">
+                                                                {{ appointment.diabetes_prediction.percentage|floatformat:1 }}%
+                                                            </span>
+                                                        </h3>
+                                                        <h5 class="text-{{ appointment.diabetes_prediction.risk_color }}">
+                                                            Ryzyko {{ appointment.diabetes_prediction.get_risk_level_display }}
+                                                        </h5>
+                                                    </div>
+
+                                                    <!-- Test Parameters -->
+                                                    <h6 class="border-bottom pb-2 mb-3">
+                                                        <i class="fas fa-list"></i> Parametry badania:
+                                                    </h6>
+                                                    <div class="row small">
+                                                        <div class="col-6 mb-2">
+                                                            <strong>Glukoza:</strong> {{ appointment.diabetes_prediction.glucose }} mg/dL
+                                                        </div>
+                                                        <div class="col-6 mb-2">
+                                                            <strong>BMI:</strong> {{ appointment.diabetes_prediction.bmi }}
+                                                        </div>
+                                                        <div class="col-6 mb-2">
+                                                            <strong>Ciśnienie:</strong> {{ appointment.diabetes_prediction.blood_pressure }} mm Hg
+                                                        </div>
+                                                        <div class="col-6 mb-2">
+                                                            <strong>Wiek:</strong> {{ appointment.diabetes_prediction.age }} lat
+                                                        </div>
+                                                        <div class="col-6 mb-2">
+                                                            <strong>Insulina:</strong> {{ appointment.diabetes_prediction.insulin }} μU/ml
+                                                        </div>
+                                                        <div class="col-6 mb-2">
+                                                            <strong>Rodowód:</strong> {{ appointment.diabetes_prediction.diabetes_pedigree|floatformat:3 }}
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Metadata -->
+                                                    <div class="mt-3 pt-2 border-top">
+                                                        <small class="text-muted">
+                                                            <i class="fas fa-clock"></i>
+                                                            {{ appointment.diabetes_prediction.created_at|date:"j F Y, H:i" }}
+                                                            {% if appointment.diabetes_prediction.created_by %}
+                                                                | <i class="fas fa-user-md"></i>
+                                                                Dr. {{ appointment.diabetes_prediction.created_by.user.last_name }}
+                                                            {% endif %}
+                                                        </small>
+                                                    </div>
+
+                                                    <!-- Action Button -->
+                                                    <div class="mt-3">
+                                                        <a href="{% url 'doctors:diabetes_risk_assessment' appointment.id %}"
+                                                           class="btn btn-sm btn-outline-primary w-100">
+                                                            <i class="fas fa-eye"></i> Zobacz szczegóły
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="alert alert-info text-center">
+                                    <i class="fas fa-info-circle fa-2x mb-3"></i>
+                                    <h5>Brak wyników badań ML</h5>
+                                    <p class="mb-0">Nie przeprowadzono jeszcze żadnej oceny ryzyka cukrzycy dla tego pacjenta.</p>
+                                    <p class="mt-2">
+                                        <small>Ocena ryzyka jest dostępna dla zakończonych wizyt.</small>
+                                    </p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+        </div>
+    </div>
+</div>
+
+<!-- Status Change Modal -->
+<div class="modal fade" id="statusChangeModal" tabindex="-1" aria-labelledby="statusChangeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="statusChangeModalLabel">
+                    <i class="fas fa-edit"></i> Zmiana Statusu Wizyty
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted mb-3">
+                    <i class="fas fa-info-circle"></i> Wybierz nowy status dla wizyty:
+                </p>
+                <div class="d-grid gap-2" id="statusOptions">
+                    <button type="button" class="btn btn-outline-primary btn-lg status-option"
+                            data-status="scheduled">
+                        <i class="fas fa-calendar-check"></i> Zaplanowana
+                    </button>
+                    <button type="button" class="btn btn-outline-success btn-lg status-option"
+                            data-status="completed">
+                        <i class="fas fa-check-circle"></i> Zakończona
+                    </button>
+                    <button type="button" class="btn btn-outline-warning btn-lg status-option"
+                            data-status="cancelled">
+                        <i class="fas fa-times-circle"></i> Anulowana
+                    </button>
+                    <button type="button" class="btn btn-outline-danger btn-lg status-option"
+                            data-status="no_show">
+                        <i class="fas fa-exclamation-triangle"></i> Niestawiennictwo
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Anuluj
+                </button>
+            </div>
         </div>
     </div>
 </div>
 
 <style>
+.status-badge-clickable {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.status-badge-clickable:hover {
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.status-option {
+    text-align: left;
+    transition: all 0.2s;
+}
+
+.status-option:hover {
+    transform: translateX(5px);
+}
+
 .opacity-75 {
     opacity: 0.75;
 }
@@ -556,5 +752,152 @@ thead th {
     white-space: nowrap;
 }
 </style>
+
+<script>
+// AJAX Status Change Functionality
+document.addEventListener('DOMContentLoaded', function() {
+    let currentAppointmentId = null;
+    const modal = new bootstrap.Modal(document.getElementById('statusChangeModal'));
+
+    // Handle click on status badge
+    document.querySelectorAll('.status-badge-clickable').forEach(badge => {
+        badge.addEventListener('click', function() {
+            currentAppointmentId = this.dataset.appointmentId;
+            const currentStatus = this.dataset.currentStatus;
+
+            // Highlight current status option
+            document.querySelectorAll('.status-option').forEach(option => {
+                if (option.dataset.status === currentStatus) {
+                    option.classList.add('active');
+                    option.innerHTML = option.innerHTML.replace('<i', '<i class="fas fa-check me-2"></i><i');
+                } else {
+                    option.classList.remove('active');
+                }
+            });
+
+            modal.show();
+        });
+    });
+
+    // Handle status option selection
+    document.querySelectorAll('.status-option').forEach(option => {
+        option.addEventListener('click', function() {
+            const newStatus = this.dataset.status;
+
+            if (currentAppointmentId) {
+                updateAppointmentStatus(currentAppointmentId, newStatus);
+                modal.hide();
+            }
+        });
+    });
+
+    // AJAX function to update status
+    function updateAppointmentStatus(appointmentId, newStatus) {
+        const csrftoken = getCookie('csrftoken');
+        const url = `/doctors/appointment/${appointmentId}/update-status/`;
+
+        // Show loading state
+        const badge = document.querySelector(`[data-appointment-id="${appointmentId}"]`);
+        const originalText = badge.textContent;
+        badge.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Aktualizowanie...';
+        badge.style.pointerEvents = 'none';
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify({ status: newStatus })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update badge with new status
+                badge.textContent = data.status_display;
+                badge.dataset.currentStatus = data.new_status;
+                badge.style.pointerEvents = 'auto';
+
+                // Update badge color
+                badge.classList.remove('bg-primary', 'bg-success', 'bg-warning', 'bg-danger');
+                if (newStatus === 'completed') {
+                    badge.classList.add('bg-success');
+                } else if (newStatus === 'scheduled') {
+                    badge.classList.add('bg-primary');
+                } else if (newStatus === 'cancelled') {
+                    badge.classList.add('bg-warning');
+                } else {
+                    badge.classList.add('bg-danger');
+                }
+
+                // Show success message
+                showAlert('success', data.message);
+
+                // Reload page after 1 second to update ML button visibility
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            } else {
+                badge.textContent = originalText;
+                badge.style.pointerEvents = 'auto';
+                showAlert('danger', 'Błąd: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            badge.textContent = originalText;
+            badge.style.pointerEvents = 'auto';
+            showAlert('danger', 'Wystąpił błąd podczas aktualizacji statusu.');
+        });
+    }
+
+    // Helper function to get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Helper function to show alerts
+    function showAlert(type, message) {
+        const alertHtml = `
+            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        `;
+
+        // Find messages container or create one
+        let messagesContainer = document.querySelector('.row.mb-4 .col-12');
+        if (!messagesContainer) {
+            const firstRow = document.querySelector('.container-fluid .row');
+            messagesContainer = document.createElement('div');
+            messagesContainer.className = 'row mb-4';
+            messagesContainer.innerHTML = '<div class="col-12"></div>';
+            firstRow.after(messagesContainer);
+            messagesContainer = messagesContainer.querySelector('.col-12');
+        }
+
+        messagesContainer.insertAdjacentHTML('beforeend', alertHtml);
+
+        // Auto-remove alert after 5 seconds
+        setTimeout(() => {
+            const alert = messagesContainer.querySelector('.alert:last-child');
+            if (alert) {
+                alert.remove();
+            }
+        }, 5000);
+    }
+});
+</script>
 
 {% endblock %}

@@ -5,7 +5,9 @@ from django.utils import timezone
 from django.core.paginator import Paginator
 from django.db.models import Count, Q
 from django.http import Http404, JsonResponse, FileResponse, HttpResponseForbidden
-from .forms import AppointmentNotesForm, AppointmentAttachmentForm, NoteTemplateForm, DoctorProfileForm
+from .forms import AppointmentNotesForm, AppointmentAttachmentForm, NoteTemplateForm, DoctorProfileForm, DiabetesPredictionForm
+import sys
+import os
 
 @login_required
 def dashboard(request):
@@ -331,6 +333,14 @@ def patient_detail(request, patient_id):
     if status_filter:
         filter_params += f'&status={status_filter}'
 
+    # Get appointments with ML predictions for the Tests tab
+    from appointments.models import DiabetesPrediction
+    appointments_with_predictions = Appointment.objects.filter(
+        doctor=doctor,
+        patient=patient,
+        diabetes_prediction__isnull=False
+    ).select_related('diabetes_prediction').order_by('-appointment_date')
+
     context = {
         'doctor': doctor,
         'patient': patient,
@@ -346,6 +356,7 @@ def patient_detail(request, patient_id):
         'sort_order': sort_order,
         'status_filter': status_filter,
         'filter_params': filter_params,
+        'appointments_with_predictions': appointments_with_predictions,
     }
 
     return render(request, 'doctors/patient_detail.html', context)
@@ -712,3 +723,169 @@ def edit_profile(request):
     }
 
     return render(request, 'doctors/edit_profile.html', context)
+
+
+# ============================================
+# Diabetes Risk Prediction Views
+# ============================================
+
+@login_required
+def diabetes_risk_assessment(request, appointment_id):
+    """Widok do oceny ryzyka cukrzycy dla zakończonej wizyty"""
+    if not request.user.is_doctor():
+        return redirect('authentication:login')
+
+    doctor = request.user.doctor_profile
+
+    # Get appointment and verify doctor has access
+    from appointments.models import Appointment, DiabetesPrediction
+
+    appointment = get_object_or_404(Appointment, id=appointment_id)
+
+    # Verify this appointment belongs to this doctor
+    if appointment.doctor != doctor:
+        raise Http404("Nie masz uprawnień do tej wizyty.")
+
+    # Check if appointment is completed
+    if appointment.status != 'completed':
+        messages.warning(request, 'Ocena ryzyka jest dostępna tylko dla zakończonych wizyt.')
+        return redirect('doctors:patient_detail', patient_id=appointment.patient.id)
+
+    # Check if prediction already exists
+    existing_prediction = None
+    try:
+        existing_prediction = DiabetesPrediction.objects.get(appointment=appointment)
+    except DiabetesPrediction.DoesNotExist:
+        pass
+
+    # If prediction exists and this is a GET request, show results directly
+    if existing_prediction and request.method == 'GET':
+        context = {
+            'doctor': doctor,
+            'appointment': appointment,
+            'patient': appointment.patient,
+            'form': DiabetesPredictionForm(instance=existing_prediction),
+            'prediction': existing_prediction,
+            'show_results': True,
+        }
+        return render(request, 'doctors/diabetes_risk_assessment.html', context)
+
+    # Handle form submission
+    if request.method == 'POST':
+        form = DiabetesPredictionForm(request.POST, instance=existing_prediction)
+        if form.is_valid():
+            # Get form data
+            patient_data = {
+                'pregnancies': form.cleaned_data['pregnancies'],
+                'glucose': form.cleaned_data['glucose'],
+                'blood_pressure': form.cleaned_data['blood_pressure'],
+                'skin_thickness': form.cleaned_data['skin_thickness'],
+                'insulin': form.cleaned_data['insulin'],
+                'bmi': form.cleaned_data['bmi'],
+                'diabetes_pedigree': form.cleaned_data['diabetes_pedigree'],
+                'age': form.cleaned_data['age'],
+            }
+
+            # Import and use the predictor
+            sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'ml'))
+            from diabetes_predictor import DiabetesPredictor
+
+            try:
+                # Initialize predictor and get prediction
+                predictor = DiabetesPredictor()
+                result = predictor.predict_with_interpretation(patient_data)
+
+                # Save prediction
+                prediction = form.save(commit=False)
+                prediction.appointment = appointment
+                prediction.probability = result['probability']
+                prediction.percentage = result['percentage']
+                prediction.risk_level = result['risk_level']
+                prediction.risk_color = result['risk_color']
+                prediction.created_by = doctor
+                prediction.save()
+
+                messages.success(request, 'Ocena ryzyka cukrzycy została wygenerowana pomyślnie!')
+
+                # Redirect to show results
+                context = {
+                    'doctor': doctor,
+                    'appointment': appointment,
+                    'patient': appointment.patient,
+                    'form': form,
+                    'prediction': prediction,
+                    'show_results': True,
+                }
+                return render(request, 'doctors/diabetes_risk_assessment.html', context)
+
+            except Exception as e:
+                messages.error(request, f'Błąd podczas generowania predykcji: {str(e)}')
+                form = DiabetesPredictionForm(instance=existing_prediction)
+        else:
+            messages.error(request, 'Wystąpiły błędy w formularzu. Sprawdź wprowadzone dane.')
+    else:
+        # GET request - initialize form (only if no prediction exists)
+        # Pre-fill age from patient data if available
+        initial_data = {}
+        if hasattr(appointment.patient, 'get_age'):
+            initial_data['age'] = appointment.patient.get_age()
+        form = DiabetesPredictionForm(initial=initial_data)
+
+    context = {
+        'doctor': doctor,
+        'appointment': appointment,
+        'patient': appointment.patient,
+        'form': form,
+        'prediction': existing_prediction,
+        'show_results': False,
+    }
+
+    return render(request, 'doctors/diabetes_risk_assessment.html', context)
+
+
+@login_required
+def update_appointment_status(request, appointment_id):
+    """AJAX endpoint do szybkiej zmiany statusu wizyty"""
+    if not request.user.is_doctor():
+        return JsonResponse({'success': False, 'error': 'Brak uprawnień'}, status=403)
+
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Metoda nie dozwolona'}, status=405)
+
+    doctor = request.user.doctor_profile
+
+    from appointments.models import Appointment
+    appointment = get_object_or_404(Appointment, id=appointment_id)
+
+    # Verify this appointment belongs to this doctor
+    if appointment.doctor != doctor:
+        return JsonResponse({'success': False, 'error': 'Brak uprawnień do tej wizyty'}, status=403)
+
+    # Get new status from request
+    import json
+    try:
+        data = json.loads(request.body)
+        new_status = data.get('status')
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Nieprawidłowe dane'}, status=400)
+
+    # Validate status
+    valid_statuses = [choice[0] for choice in Appointment.STATUS_CHOICES]
+    if new_status not in valid_statuses:
+        return JsonResponse({'success': False, 'error': 'Nieprawidłowy status'}, status=400)
+
+    # Update status
+    old_status = appointment.status
+    appointment.status = new_status
+    appointment.save()
+
+    # Get display name for new status
+    status_display = dict(Appointment.STATUS_CHOICES)[new_status]
+
+    return JsonResponse({
+        'success': True,
+        'old_status': old_status,
+        'new_status': new_status,
+        'status_display': status_display,
+        'message': f'Status wizyty zmieniony na: {status_display}'
+    })
